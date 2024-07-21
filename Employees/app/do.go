@@ -1,0 +1,221 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/l1qwie/Congratulations/Employees/apptype"
+)
+
+const deflimit int = 15
+
+type RedClient struct {
+	cl *redis.Client
+}
+
+func addClient() (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "",
+		DB:       0,
+	})
+	_, err := client.Ping(context.Background()).Result()
+	return client, err
+}
+
+func (RCL *RedClient) getEmployeeByID(subid int) (*apptype.Employee, error) {
+	key := fmt.Sprintf("employeeid:%d", subid)
+	empl := new(apptype.Employee)
+	fields, err := RCL.cl.HGetAll(context.Background(), key).Result()
+	if err == nil {
+		empl = &apptype.Employee{
+			Id:       subid,
+			Name:     fields["name"],
+			Nickname: fields["nickname"],
+			Email:    fields["email"],
+			Birthday: fields["birthday"],
+		}
+	}
+	return empl, err
+}
+
+func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Employee, error) {
+	log.Printf("Get into selectSubEmployees with params: employeeid: %d, limit: %d", employeeid, limit)
+	key := fmt.Sprintf("subscriptions:%d", employeeid)
+	employees := make([]*apptype.Employee, limit)
+	subs, err := RCL.cl.SMembers(context.Background(), key).Result()
+	if err == nil {
+		log.Print("It has succsessfuly just pulled all subids from redis")
+		subid := 0
+		log.Print(len(subs))
+		for i := 0; i < len(subs) && err == nil; i++ {
+			subid, err = strconv.Atoi(subs[i])
+			if err == nil {
+				log.Print("It has successfuly converted string to int")
+				empl, err := RCL.getEmployeeByID(subid)
+				if err == nil {
+					log.Print("Successfuly got an employee by its ID")
+					employees[i] = empl
+				}
+			}
+		}
+	}
+	log.Print("Get out of selectSubEmployees")
+	return employees, err
+}
+
+func (RCL *RedClient) getAllEmployeeIDs() ([]string, error) {
+	key := "employee_ids"
+	ids, err := RCL.cl.SMembers(context.Background(), key).Result()
+	return ids, err
+}
+
+func (RCL *RedClient) selectEmployees(limit int) ([]*apptype.Employee, error) {
+	log.Printf("Get into selectEmployees with a param: limit: %d", limit)
+	ids, err := RCL.getAllEmployeeIDs()
+	employees := make([]*apptype.Employee, limit)
+	if err == nil {
+		log.Print("Got all employees IDs")
+		if len(ids) > limit {
+			log.Print("The length of ids is bigger than limit")
+			ids = ids[:limit]
+		}
+		for i, idStr := range ids {
+			id, err := strconv.Atoi(idStr)
+			if err == nil {
+				log.Print("Successfuly converted string to int")
+				emp, err := RCL.getEmployeeByID(id)
+				if err == nil {
+					log.Print("Successfuly got an employee by its ID")
+					employees[i] = emp
+				}
+			}
+		}
+	}
+	log.Print("Get out of selectEmployees")
+	return employees, err
+}
+
+func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
+	key := fmt.Sprintf("employeeid:%d", empl.Id)
+	_, err := RCL.cl.HSet(context.Background(), key, map[string]interface{}{
+		"name":     empl.Name,
+		"nickname": empl.Nickname,
+		"email":    empl.Email,
+		"birthday": empl.Birthday,
+	}).Result()
+	if err == nil {
+		idKey := "employee_ids"
+		_, err = RCL.cl.SAdd(context.Background(), idKey, empl.Id).Result()
+	}
+	return err
+}
+
+func (RCL *RedClient) deleleEmpl(empl *apptype.Employee) error {
+	key := fmt.Sprintf("employeeid:%d", empl.Id)
+	err := RCL.cl.Del(context.Background(), key).Err()
+	if err != nil {
+		log.Print(err)
+	}
+	return err
+}
+
+func (RCL *RedClient) updEmpl(empl *apptype.Employee) error {
+	err := RCL.deleleEmpl(empl)
+	if err == nil {
+		err = RCL.newEmpl(empl)
+	}
+	return err
+}
+
+func (RCL *RedClient) addSub(employeeid, subtoId int) error {
+	key := fmt.Sprintf("subscriptions:%d", employeeid)
+	_, err := RCL.cl.SAdd(context.Background(), key, subtoId).Result()
+	return err
+}
+
+func (RCL *RedClient) unSub(employeeid, unsubtoId int) error {
+	key := fmt.Sprintf("subscriptions:%d", employeeid)
+	_, err := RCL.cl.SRem(context.Background(), key, unsubtoId).Result()
+	return err
+}
+
+func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemplid string) error {
+	var (
+		err error
+		id  int
+	)
+	if whatdo == "new" {
+		err = RCL.newEmpl(empl)
+	} else if whatdo == "delete" {
+		err = RCL.deleleEmpl(empl)
+	} else if whatdo == "update" {
+		err = RCL.updEmpl(empl)
+	} else if whatdo == "sub" {
+		id, err = strconv.Atoi(diffrentemplid)
+		if err == nil {
+			err = RCL.addSub(empl.Id, id)
+		}
+	} else if whatdo == "unsub" {
+		id, err = strconv.Atoi(diffrentemplid)
+		if err == nil {
+			err = RCL.unSub(empl.Id, id)
+		}
+	} else {
+		err = fmt.Errorf(`"whatdo" param should be "new", "update", "delete", "sub" or "unsub"`)
+	}
+	return err
+}
+
+func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
+	var (
+		employees []*apptype.Employee
+		err       error
+	)
+	log.Print("Get into GetEmployees func in bussines logic")
+	RDCL := new(RedClient)
+	RDCL.cl, err = addClient()
+	if err == nil {
+		log.Print("The connection to redis is successful")
+		if id != 0 {
+			log.Print("The recieved id isn't 0")
+			if limit != 0 {
+				log.Print("The recieved limit isn't 0")
+				employees, err = RDCL.selectSubEmployees(id, limit)
+			} else {
+				log.Print("The recieved limit is 0")
+				employees, err = RDCL.selectSubEmployees(id, deflimit)
+			}
+		} else {
+			log.Print("The recieved id is 0")
+			if limit != 0 {
+				log.Print("The recieved limit isn't 0")
+				employees, err = RDCL.selectEmployees(limit)
+			} else {
+				log.Print("The recieved limit is 0")
+				employees, err = RDCL.selectEmployees(deflimit)
+			}
+		}
+	}
+	log.Print("Get out of GetEmployees func in bussines logic")
+	return employees, err
+}
+
+func UpdateEmployees(empl *apptype.Employee, whatdo, diffrentemplid string) (string, error) {
+	var (
+		answer string
+		err    error
+	)
+	RDCL := new(RedClient)
+	RDCL.cl, err = addClient()
+	if err == nil {
+		err = RDCL.updateEmployee(empl, whatdo, diffrentemplid)
+		if err == nil {
+			answer = "The employee has been updated"
+		}
+	}
+	return answer, err
+}

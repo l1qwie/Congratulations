@@ -1,0 +1,21 @@
+networks:
+  congratulations:
+    external: true
+
+services:
+  
+  redis:
+    restart: always
+    image: redis:latest
+    ports:
+      - "6308:6379"
+    networks:
+      - congratulations
+  
+  empl:
+    build: .
+    networks:
+      - congratulations
+    depends_on:
+      - redis
+    command: ["wait-for-it.sh", "redis:6379", "--", "/app/bin"]
