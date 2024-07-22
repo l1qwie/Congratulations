@@ -11,7 +11,7 @@ services:
       - "6308:6379"
     networks:
       - congratulations
-    command: redis-server --loglevel debug
+    command: redis-server --loglevel ${REDIS_LOGLEVEL} # debug, verbose, notice, warning
   
   empl:
     build: .
