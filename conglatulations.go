@@ -1,7 +1,12 @@
 package main
 
-import employees "github.com/l1qwie/Congratulations/Employees"
+import (
+	"time"
+
+	employees "github.com/l1qwie/Congratulations/Employees"
+)
 
 func main() {
+	time.Sleep(time.Second * 6)
 	employees.StartEmployeeTests()
 }

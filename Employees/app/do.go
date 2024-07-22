@@ -43,9 +43,9 @@ func (RCL *RedClient) getEmployeeByID(subid int) (*apptype.Employee, error) {
 }
 
 func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Employee, error) {
-	log.Printf("Get into selectSubEmployees with params: employeeid: %d, limit: %d", employeeid, limit)
+	var employees []*apptype.Employee
+	log.Printf("Got into selectSubEmployees with params: employeeid: %d, limit: %d", employeeid, limit)
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
-	employees := make([]*apptype.Employee, limit)
 	subs, err := RCL.cl.SMembers(context.Background(), key).Result()
 	if err == nil {
 		log.Print("It has succsessfuly just pulled all subids from redis")
@@ -58,7 +58,7 @@ func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Empl
 				empl, err := RCL.getEmployeeByID(subid)
 				if err == nil {
 					log.Print("Successfuly got an employee by its ID")
-					employees[i] = empl
+					employees = append(employees, empl)
 				}
 			}
 		}
@@ -74,28 +74,28 @@ func (RCL *RedClient) getAllEmployeeIDs() ([]string, error) {
 }
 
 func (RCL *RedClient) selectEmployees(limit int) ([]*apptype.Employee, error) {
-	log.Printf("Get into selectEmployees with a param: limit: %d", limit)
+	var employees []*apptype.Employee
+	log.Printf("Got into selectEmployees with a param: limit: %d", limit)
 	ids, err := RCL.getAllEmployeeIDs()
-	employees := make([]*apptype.Employee, limit)
 	if err == nil {
 		log.Print("Got all employees IDs")
 		if len(ids) > limit {
 			log.Print("The length of ids is bigger than limit")
 			ids = ids[:limit]
 		}
-		for i, idStr := range ids {
+		for _, idStr := range ids {
 			id, err := strconv.Atoi(idStr)
 			if err == nil {
 				log.Print("Successfuly converted string to int")
-				emp, err := RCL.getEmployeeByID(id)
+				empl, err := RCL.getEmployeeByID(id)
 				if err == nil {
 					log.Print("Successfuly got an employee by its ID")
-					employees[i] = emp
+					employees = append(employees, empl)
 				}
 			}
 		}
 	}
-	log.Print("Get out of selectEmployees")
+	log.Print("Got out of selectEmployees")
 	return employees, err
 }
 
@@ -114,8 +114,8 @@ func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
 	return err
 }
 
-func (RCL *RedClient) deleleEmpl(empl *apptype.Employee) error {
-	key := fmt.Sprintf("employeeid:%d", empl.Id)
+func (RCL *RedClient) deleleEmpl(id string) error {
+	key := fmt.Sprintf("employeeid:%s", id)
 	err := RCL.cl.Del(context.Background(), key).Err()
 	if err != nil {
 		log.Print(err)
@@ -124,7 +124,7 @@ func (RCL *RedClient) deleleEmpl(empl *apptype.Employee) error {
 }
 
 func (RCL *RedClient) updEmpl(empl *apptype.Employee) error {
-	err := RCL.deleleEmpl(empl)
+	err := RCL.deleleEmpl(string(empl.Id))
 	if err == nil {
 		err = RCL.newEmpl(empl)
 	}
@@ -148,25 +148,34 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 		err error
 		id  int
 	)
+	log.Printf("Got in updateEmployee with params: empl: %v, whatdo: %s, diffrentemplid: %s", *empl, whatdo, diffrentemplid)
 	if whatdo == "new" {
+		log.Print(`Whatdo is "new"`)
 		err = RCL.newEmpl(empl)
 	} else if whatdo == "delete" {
-		err = RCL.deleleEmpl(empl)
+		log.Print(`Whatdo is "delete"`)
+		err = RCL.deleleEmpl(diffrentemplid)
 	} else if whatdo == "update" {
+		log.Print(`Whatdo is "update"`)
 		err = RCL.updEmpl(empl)
 	} else if whatdo == "sub" {
+		log.Print(`Whatdo is "sub"`)
 		id, err = strconv.Atoi(diffrentemplid)
 		if err == nil {
+			log.Print("Has successfuly converted string to int")
 			err = RCL.addSub(empl.Id, id)
 		}
 	} else if whatdo == "unsub" {
+		log.Print(`Whatdo is "unsub"`)
 		id, err = strconv.Atoi(diffrentemplid)
 		if err == nil {
+			log.Print("Has successfuly converted string to int")
 			err = RCL.unSub(empl.Id, id)
 		}
 	} else {
 		err = fmt.Errorf(`"whatdo" param should be "new", "update", "delete", "sub" or "unsub"`)
 	}
+	log.Print("Got out of updateEmployee")
 	return err
 }
 
@@ -175,7 +184,7 @@ func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 		employees []*apptype.Employee
 		err       error
 	)
-	log.Print("Get into GetEmployees func in bussines logic")
+	log.Print("Got into GetEmployees func in the bussines logic")
 	RDCL := new(RedClient)
 	RDCL.cl, err = addClient()
 	if err == nil {
@@ -200,7 +209,7 @@ func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 			}
 		}
 	}
-	log.Print("Get out of GetEmployees func in bussines logic")
+	log.Print("Got out of GetEmployees func in the bussines logic")
 	return employees, err
 }
 
@@ -209,13 +218,17 @@ func UpdateEmployees(empl *apptype.Employee, whatdo, diffrentemplid string) (str
 		answer string
 		err    error
 	)
+	log.Print("Got into UpdateEmployees func in the bussines logic")
 	RDCL := new(RedClient)
 	RDCL.cl, err = addClient()
 	if err == nil {
+		log.Print("The connection to redis is successful")
 		err = RDCL.updateEmployee(empl, whatdo, diffrentemplid)
 		if err == nil {
+			log.Print("Has successfuly updated redis")
 			answer = "The employee has been updated"
 		}
 	}
+	log.Print("Got out of UpdateEmployees func in the bussines logic")
 	return answer, err
 }

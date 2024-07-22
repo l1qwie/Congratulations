@@ -33,6 +33,9 @@ func (TRCL *TestRedClient) createEmpl(empl *apptype.Employee) {
 	if err == nil {
 		idKey := "employee_ids"
 		_, err = TRCL.Cl.SAdd(context.Background(), idKey, empl.Id).Result()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

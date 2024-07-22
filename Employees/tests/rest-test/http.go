@@ -1,20 +1,23 @@
 package resttest
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/l1qwie/Congratulations/Employees/api/rest"
 	"github.com/l1qwie/Congratulations/Employees/apptype"
 	"github.com/l1qwie/Congratulations/Employees/tests/redis"
 )
 
-var key []byte
-
-// Creates HTTPS client with settings
 func createClient() *http.Client {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -26,22 +29,138 @@ func createClient() *http.Client {
 	return client
 }
 
-func getEmployees(id, limit int) []*apptype.Employee {
-	resp, err := http.Get(fmt.Sprintf("https://localhost:8099/congratulations/employees/%d/%d", id, limit))
+func generateSymKey(filePath string) []byte {
+	//AES-256
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
 	if err != nil {
 		panic(err)
 	}
+	err = os.WriteFile(filePath, key, 0600)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+func decryptData(data, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	if len(nonce) != nonceSize {
+		return nil, fmt.Errorf("nonce size is incorrect")
+	}
+
+	return gcm.Open(nil, nonce, ciphertext, nil)
+}
+
+func encryptData(data, key []byte) ([]byte, error) {
+	var (
+		gcm   cipher.AEAD
+		nonce []byte
+	)
+	block, err := aes.NewCipher(key)
+	if err == nil {
+		gcm, err = cipher.NewGCM(block)
+	}
+	if err == nil {
+		nonce = make([]byte, gcm.NonceSize())
+		_, err = io.ReadFull(rand.Reader, nonce)
+	}
+	return gcm.Seal(nonce, nonce, data, nil), err
+}
+
+func postEmployees(body []byte, whatdo string, id int) string {
+	var res string
+	client := createClient()
+
+	encryptedBody, err := encryptData(body, apptype.SymKey)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to encrypt data: %s", err))
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:8099/congratulations/employees/%s/%d", whatdo, id), bytes.NewBuffer(encryptedBody))
+	req.Header.Set("Content-Type", "application/json")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create request: %s", err))
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to do request: %s", err))
+	}
+
 	defer resp.Body.Close()
 	respbody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read response: %s", err))
 	}
-	log.Printf("Response: %s", string(respbody))
-	employees := make([]*apptype.Employee, limit)
-	err = json.Unmarshal(respbody, &employees)
+
+	log.Printf("Response: %v", respbody)
+
+	decryptedMessage, err := decryptData(respbody, apptype.SymKey)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to unmarshal response: %s", err))
+		panic(fmt.Sprintf("Failed to decrypt response message: %s", err))
 	}
+
+	res = string(decryptedMessage)
+	log.Print("Response:", res)
+	return res
+}
+
+func getEmployees(id, limit int) []*apptype.Employee {
+	var employees []*apptype.Employee
+
+	resp, err := http.Get(fmt.Sprintf("https://localhost:8099/congratulations/employees/%d/%d", id, limit))
+	if err != nil {
+		panic(fmt.Sprintf("Failed to make HTTP request: %s", err))
+	}
+	defer resp.Body.Close()
+
+	respbody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to read response: %s", err))
+	}
+	log.Printf("Response (client part): %v", respbody)
+
+	decryptedMessage, err := decryptData(respbody, apptype.SymKey)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to decrypt response message: %s", err))
+	}
+
+	err = json.Unmarshal(decryptedMessage, &employees)
+	if err != nil {
+		var errstruct rest.Err
+		err = json.Unmarshal(decryptedMessage, &errstruct)
+		if err != nil {
+			var resstr string
+			err = json.Unmarshal(decryptedMessage, &resstr)
+			if err != nil {
+				panic(fmt.Sprintf("Failed to unmarshal response: %s", err))
+			}
+			if resstr != "" {
+				panic(fmt.Sprintf("Received a string from the response: %s", resstr))
+			}
+		}
+		if errstruct.Error != "" {
+			panic(fmt.Sprintf("Error: %s", errstruct.Error))
+		}
+	}
+
+	log.Print("Response:", string(decryptedMessage))
 	return employees
 }
 
@@ -131,10 +250,72 @@ func testGetEmployees() {
 	log.Print("testGetEmployees has successfuly finished")
 }
 
+func testDeleteEmployee(TRCL *redis.TestRedClient) {
+	answer := postEmployees(nil, "delete", 111)
+	if answer != "The employee has been updated" {
+		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
+	}
+	if TRCL.CheckDeletedEmployee("111") {
+		panic("The employee wasn't deleted")
+	}
+}
+
+func testChangeEmployee(TRCL *redis.TestRedClient) {
+	req := &apptype.Employee{
+		Id:       1145,
+		Name:     "Изя",
+		Nickname: "easy",
+		Email:    "ya.ru@ya.ru",
+		Birthday: "12-04-1978",
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+	answer := postEmployees(body, "update", 111)
+	if answer != "The employee has been updated" {
+		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
+	}
+	if !TRCL.CheckUpdatedOrNewEmployee(req) {
+		panic("The employee wasn't updated")
+	}
+}
+
+func testNewEmployee(TRCL *redis.TestRedClient) {
+	req := &apptype.Employee{
+		Id:       1145,
+		Name:     "Изя",
+		Nickname: "easy",
+		Email:    "ya.ru@ya.ru",
+		Birthday: "12-04-1978",
+	}
+	body, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+	answer := postEmployees(body, "new", 0)
+	if answer != "The employee has been updated" {
+		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
+	}
+	if !TRCL.CheckUpdatedOrNewEmployee(req) {
+		panic("The new employee wasn't added")
+	}
+}
+
+func testPostEmployees(TRCL *redis.TestRedClient) {
+	log.Print("testPostEmployees has just started")
+	//testDeleteEmployee(TRCL)
+	//testChangeEmployee(TRCL)
+	testNewEmployee(TRCL)
+	log.Print("testPostEmployees has successfuly finished")
+}
+
 func StartEmployeeTests() {
 	var err error
+	log.Print("Tests StartEmployeeTests() started")
 	TRCL := new(redis.TestRedClient)
 	TRCL.Cl, err = redis.AddClient()
+	apptype.SymKey = generateSymKey("symmetric-key.bin")
 	if err != nil {
 		panic(err)
 	}
@@ -143,4 +324,6 @@ func StartEmployeeTests() {
 	defer TRCL.DeleteEmployees()
 
 	testGetEmployees()
+	testPostEmployees(TRCL)
+	log.Print("Tests StartEmployeeTests() finished")
 }
