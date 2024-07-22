@@ -16,6 +16,7 @@ type RedClient struct {
 	cl *redis.Client
 }
 
+// Добавляет редис-клиента
 func addClient() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
@@ -26,6 +27,7 @@ func addClient() (*redis.Client, error) {
 	return client, err
 }
 
+// Получает данные из хэш-таблицы по определенному employeeid
 func (RCL *RedClient) getEmployeeByID(subid int) (*apptype.Employee, error) {
 	key := fmt.Sprintf("employeeid:%d", subid)
 	empl := new(apptype.Employee)
@@ -42,6 +44,8 @@ func (RCL *RedClient) getEmployeeByID(subid int) (*apptype.Employee, error) {
 	return empl, err
 }
 
+// Вызывает функции, которые вынимает нужные данные из множества и хэш таблицы, а так же формирует слайс.
+// Формирует слайс из данных подписсчиков одного работника
 func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Employee, error) {
 	var employees []*apptype.Employee
 	log.Printf("Got into selectSubEmployees with params: employeeid: %d, limit: %d", employeeid, limit)
@@ -67,12 +71,15 @@ func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Empl
 	return employees, err
 }
 
+// Получает все id работников из множества
 func (RCL *RedClient) getAllEmployeeIDs() ([]string, error) {
 	key := "employee_ids"
 	ids, err := RCL.cl.SMembers(context.Background(), key).Result()
 	return ids, err
 }
 
+// Вызывает функции, которые вынимает нужные данные из множества и хэш таблицы, а так же формирует слайс
+// Формирует слайс из всевозможных данных о всех работниках
 func (RCL *RedClient) selectEmployees(limit int) ([]*apptype.Employee, error) {
 	var employees []*apptype.Employee
 	log.Printf("Got into selectEmployees with a param: limit: %d", limit)
@@ -99,6 +106,7 @@ func (RCL *RedClient) selectEmployees(limit int) ([]*apptype.Employee, error) {
 	return employees, err
 }
 
+// Добавляет работника в хэш-таблицу и также добавляет id работника в множество
 func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
 	key := fmt.Sprintf("employeeid:%d", empl.Id)
 	_, err := RCL.cl.HSet(context.Background(), key, map[string]interface{}{
@@ -114,8 +122,9 @@ func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
 	return err
 }
 
-func (RCL *RedClient) deleleEmpl(id string) error {
-	key := fmt.Sprintf("employeeid:%s", id)
+// Удлаяет работника из хэш-таблицы
+func (RCL *RedClient) deleleEmpl(id int) error {
+	key := fmt.Sprintf("employeeid:%d", id)
 	err := RCL.cl.Del(context.Background(), key).Err()
 	if err != nil {
 		log.Print(err)
@@ -123,55 +132,85 @@ func (RCL *RedClient) deleleEmpl(id string) error {
 	return err
 }
 
+// Обновляет данные работника. По сути - вызывает функцию удаления и функцию добавления нового работника
 func (RCL *RedClient) updEmpl(empl *apptype.Employee) error {
-	err := RCL.deleleEmpl(string(empl.Id))
+	err := RCL.deleleEmpl(empl.Id)
 	if err == nil {
 		err = RCL.newEmpl(empl)
 	}
 	return err
 }
 
+// Добавляет значение в множество (подписывает)
 func (RCL *RedClient) addSub(employeeid, subtoId int) error {
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
 	_, err := RCL.cl.SAdd(context.Background(), key, subtoId).Result()
 	return err
 }
 
+// Убирает значение из множества (отписывает)
 func (RCL *RedClient) unSub(employeeid, unsubtoId int) error {
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
 	_, err := RCL.cl.SRem(context.Background(), key, unsubtoId).Result()
 	return err
 }
 
+// Делает поиск нужного employeeID в множестве
+func (RCL *RedClient) findEmployee(id int) (bool, error) {
+	found, err := RCL.cl.SIsMember(context.Background(), "employee_ids", id).Result()
+	return found, err
+}
+
+// Делает предварительные проверки, а конкретнее: на существование employeeID в бд и значение переменной whatdo и перенавправляет на нужную функцию
 func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemplid string) error {
 	var (
 		err error
 		id  int
+		ok  bool
 	)
 	log.Printf("Got in updateEmployee with params: empl: %v, whatdo: %s, diffrentemplid: %s", *empl, whatdo, diffrentemplid)
-	if whatdo == "new" {
+	if whatdo != "new" {
+		if whatdo == "update" {
+			id, err = strconv.Atoi(diffrentemplid)
+			if err == nil {
+				ok, err = RCL.findEmployee(id)
+			}
+		} else {
+			ok, err = RCL.findEmployee(empl.Id)
+		}
+		if ok {
+			if whatdo == "sub" || whatdo == "unsub" {
+				id, err = strconv.Atoi(diffrentemplid)
+				if err == nil {
+					log.Print("Has successfuly converted string to int")
+					ok, err = RCL.findEmployee(id)
+					if ok {
+						if whatdo == "sub" {
+							err = RCL.addSub(empl.Id, id)
+						} else {
+							err = RCL.unSub(empl.Id, id)
+						}
+					} else {
+						if err == nil {
+							err = fmt.Errorf("wasn't able to find recieved employee ID for subscribing. You might try to send a diffrent one")
+						}
+					}
+				}
+			} else if whatdo == "delete" {
+				log.Print(`Whatdo is "delete"`)
+				err = RCL.deleleEmpl(empl.Id)
+			} else if whatdo == "update" {
+				log.Print(`Whatdo is "update"`)
+				err = RCL.updEmpl(empl)
+			}
+		} else {
+			if err == nil {
+				err = fmt.Errorf("wasn't able to find recieved employee ID. You might try to send a diffrent one")
+			}
+		}
+	} else if whatdo == "new" {
 		log.Print(`Whatdo is "new"`)
 		err = RCL.newEmpl(empl)
-	} else if whatdo == "delete" {
-		log.Print(`Whatdo is "delete"`)
-		err = RCL.deleleEmpl(diffrentemplid)
-	} else if whatdo == "update" {
-		log.Print(`Whatdo is "update"`)
-		err = RCL.updEmpl(empl)
-	} else if whatdo == "sub" {
-		log.Print(`Whatdo is "sub"`)
-		id, err = strconv.Atoi(diffrentemplid)
-		if err == nil {
-			log.Print("Has successfuly converted string to int")
-			err = RCL.addSub(empl.Id, id)
-		}
-	} else if whatdo == "unsub" {
-		log.Print(`Whatdo is "unsub"`)
-		id, err = strconv.Atoi(diffrentemplid)
-		if err == nil {
-			log.Print("Has successfuly converted string to int")
-			err = RCL.unSub(empl.Id, id)
-		}
 	} else {
 		err = fmt.Errorf(`"whatdo" param should be "new", "update", "delete", "sub" or "unsub"`)
 	}
@@ -179,6 +218,7 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 	return err
 }
 
+// Мейн функция для get endPoint'a
 func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 	var (
 		employees []*apptype.Employee
@@ -213,6 +253,7 @@ func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 	return employees, err
 }
 
+// Мейн функция для post endPoint'a
 func UpdateEmployees(empl *apptype.Employee, whatdo, diffrentemplid string) (string, error) {
 	var (
 		answer string

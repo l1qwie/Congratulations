@@ -9,6 +9,7 @@ import (
 	resttest "github.com/l1qwie/Congratulations/Employees/tests/rest-test"
 )
 
+// Запускает микросервис Employees
 func StartEmployeeServer() {
 	router := gin.Default()
 	rest.GetEmployees(router)
@@ -23,6 +24,7 @@ func StartEmployeeServer() {
 	}
 }
 
+// Запускает сервер и тесты для микросервиса Employees
 func StartEmployeeTests() {
 	go StartEmployeeServer()
 	resttest.StartEmployeeTests()

@@ -12,6 +12,7 @@ type TestRedClient struct {
 	Cl *redis.Client
 }
 
+// Добавление редис-клиента test-part
 func AddClient() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
@@ -22,6 +23,7 @@ func AddClient() (*redis.Client, error) {
 	return client, err
 }
 
+// Создает 1 работника в редис
 func (TRCL *TestRedClient) createEmpl(empl *apptype.Employee) {
 	key := fmt.Sprintf("employeeid:%d", empl.Id)
 	_, err := TRCL.Cl.HSet(context.Background(), key, map[string]interface{}{
@@ -39,6 +41,7 @@ func (TRCL *TestRedClient) createEmpl(empl *apptype.Employee) {
 	}
 }
 
+// Создает данные работников и отправляет их в функцию, которая добавляет их в бд
 func (TRCL *TestRedClient) InitEmployees() {
 	// The first employee
 	empl := &apptype.Employee{
@@ -67,8 +70,18 @@ func (TRCL *TestRedClient) InitEmployees() {
 		Birthday: "2016-09-15",
 	}
 	TRCL.createEmpl(empl)
+	// The fourth employee
+	empl = &apptype.Employee{
+		Id:       199,
+		Name:     "Masha",
+		Nickname: "krasotka-mashka",
+		Email:    "example@.dark.net",
+		Birthday: "1960-01-18",
+	}
+	TRCL.createEmpl(empl)
 }
 
+// Удаляет вообще все из бд (редис)
 func (TRCL *TestRedClient) DeleteEmployees() {
 	err := TRCL.Cl.FlushAll(context.Background()).Err()
 	if err != nil {
@@ -76,6 +89,7 @@ func (TRCL *TestRedClient) DeleteEmployees() {
 	}
 }
 
+// Подписывает отдного работника на трех других
 func (TRCL *TestRedClient) SubscribeEmployees() {
 	key := fmt.Sprintf("subscriptions:%d", 111)
 	_, err := TRCL.Cl.SAdd(context.Background(), key, "111").Result()

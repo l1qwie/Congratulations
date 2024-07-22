@@ -18,6 +18,7 @@ import (
 	"github.com/l1qwie/Congratulations/Employees/tests/redis"
 )
 
+// Создает клиента для https
 func createClient() *http.Client {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -29,6 +30,7 @@ func createClient() *http.Client {
 	return client
 }
 
+// Генерирует симметричный ключ для шифрования https-запросов
 func generateSymKey(filePath string) []byte {
 	//AES-256
 	key := make([]byte, 32)
@@ -43,6 +45,7 @@ func generateSymKey(filePath string) []byte {
 	return key
 }
 
+// Шифрует данные отправляемые на сервер
 func decryptData(data, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -67,6 +70,7 @@ func decryptData(data, key []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
+// Расшифровка данных полученных от сервера
 func encryptData(data, key []byte) ([]byte, error) {
 	var (
 		gcm   cipher.AEAD
@@ -83,6 +87,7 @@ func encryptData(data, key []byte) ([]byte, error) {
 	return gcm.Seal(nonce, nonce, data, nil), err
 }
 
+// Обращение к endPoint'у post-запрос
 func postEmployees(body []byte, whatdo string, id int) string {
 	var res string
 	client := createClient()
@@ -121,6 +126,7 @@ func postEmployees(body []byte, whatdo string, id int) string {
 	return res
 }
 
+// Обращение к endPoint'у get-запрос
 func getEmployees(id, limit int) []*apptype.Employee {
 	var employees []*apptype.Employee
 
@@ -165,6 +171,8 @@ func getEmployees(id, limit int) []*apptype.Employee {
 }
 
 // panic(fmt.Sprintf(`Expected: . Recieved: `))
+
+// Проверка данных, которые пришли из get-запроса
 func checkAnswersGetEmployees(employees []*apptype.Employee) {
 	if employees[0].Id != 111 {
 		panic(fmt.Sprintf("Expected: employees[0].Id = 111. Recieved: employees[0].Id = %d", employees[0].Id))
@@ -213,6 +221,7 @@ func checkAnswersGetEmployees(employees []*apptype.Employee) {
 	}
 }
 
+// Тест для получения списка из работников с дефолтным значением 15 (максимальное количество работников за 1 запрос)
 func testJustPullEmployees() {
 	log.Print("testJustPullEmployees has just started")
 	employees := getEmployees(0, 0)
@@ -220,6 +229,7 @@ func testJustPullEmployees() {
 	log.Print("testJustPullEmployees has successfuly finished")
 }
 
+// Тест для получения списка из трех работников
 func testPullThreeEmployees() {
 	log.Print("testPullThreeEmployees has just started")
 	employees := getEmployees(0, 3)
@@ -227,6 +237,7 @@ func testPullThreeEmployees() {
 	log.Print("testPullThreeEmployees has successfuly finished")
 }
 
+// Тест для получения списка работников с дефолтным значение 15 на которых подписан 1 (всего 4)
 func testPullSubEmpToEmployees() {
 	log.Print("testPullSubEmpToEmployees has just started")
 	employees := getEmployees(111, 0)
@@ -234,6 +245,7 @@ func testPullSubEmpToEmployees() {
 	log.Print("testPullSubEmpToEmployees has successfuly finished")
 }
 
+// Тест для получения списка из 3 работников, на которых подписан 1 (всего 4)
 func testPullThreeSubEmpToEmployees() {
 	log.Print("testPullThreeSubEmpToEmployees has just started")
 	employees := getEmployees(111, 3)
@@ -241,6 +253,7 @@ func testPullThreeSubEmpToEmployees() {
 	log.Print("testPullThreeSubEmpToEmployees has successfuly finished")
 }
 
+// Тестирует endPoint c get-реквестом
 func testGetEmployees() {
 	log.Print("testGetEmployees has just started")
 	testJustPullEmployees()
@@ -250,8 +263,15 @@ func testGetEmployees() {
 	log.Print("testGetEmployees has successfuly finished")
 }
 
+// Тест передачи данных для удаления работника из бд
 func testDeleteEmployee(TRCL *redis.TestRedClient) {
-	answer := postEmployees(nil, "delete", 111)
+	req := new(apptype.Employee)
+	req.Id = 111
+	body, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+	answer := postEmployees(body, "delete", 0)
 	if answer != "The employee has been updated" {
 		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
 	}
@@ -260,6 +280,7 @@ func testDeleteEmployee(TRCL *redis.TestRedClient) {
 	}
 }
 
+// Тест передачи данных изменения данных уже существуюшего работника (удаление прошлых данных и создание новых)
 func testChangeEmployee(TRCL *redis.TestRedClient) {
 	req := &apptype.Employee{
 		Id:       1145,
@@ -281,6 +302,7 @@ func testChangeEmployee(TRCL *redis.TestRedClient) {
 	}
 }
 
+// Тест передачи новых данных для нового работника
 func testNewEmployee(TRCL *redis.TestRedClient) {
 	req := &apptype.Employee{
 		Id:       1145,
@@ -302,14 +324,50 @@ func testNewEmployee(TRCL *redis.TestRedClient) {
 	}
 }
 
+func testSubEmployeeToEmployee(TRCL *redis.TestRedClient) {
+	req := new(apptype.Employee)
+	req.Id = 111
+	body, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+	answer := postEmployees(body, "sub", 199)
+	if answer != "The employee has been updated" {
+		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
+	}
+	if !TRCL.CheckSubToEmployee(req.Id, 199) {
+		panic("The employee wasn't subed to another employee")
+	}
+}
+
+func testUnSubEmployeeFromEmployee(TRCL *redis.TestRedClient) {
+	req := new(apptype.Employee)
+	req.Id = 111
+	body, err := json.Marshal(req)
+	if err != nil {
+		panic(err)
+	}
+	answer := postEmployees(body, "unsub", 122)
+	if answer != "The employee has been updated" {
+		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
+	}
+	if TRCL.CheckSubToEmployee(req.Id, 122) {
+		panic("The employee wasn't unsubed to another employee")
+	}
+}
+
+// Тестирует endPoint c post-реквестом
 func testPostEmployees(TRCL *redis.TestRedClient) {
 	log.Print("testPostEmployees has just started")
-	//testDeleteEmployee(TRCL)
-	//testChangeEmployee(TRCL)
+	testDeleteEmployee(TRCL)
+	testChangeEmployee(TRCL)
 	testNewEmployee(TRCL)
+	testSubEmployeeToEmployee(TRCL)
+	testUnSubEmployeeFromEmployee(TRCL)
 	log.Print("testPostEmployees has successfuly finished")
 }
 
+// Начинает тесты для микросервиса Employees
 func StartEmployeeTests() {
 	var err error
 	log.Print("Tests StartEmployeeTests() started")

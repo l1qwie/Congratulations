@@ -25,6 +25,7 @@ type Inside struct {
 	EmployeeId string `form:"emplid"`
 }
 
+// Расшифровывет данные с помощью ключа
 func decryptData(data, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -49,6 +50,7 @@ func decryptData(data, key []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
+// Шифрует данные с помощью ключа
 func encryptData(data, key []byte) ([]byte, error) {
 	var (
 		gcm   cipher.AEAD
@@ -65,6 +67,7 @@ func encryptData(data, key []byte) ([]byte, error) {
 	return gcm.Seal(nonce, nonce, data, nil), err
 }
 
+// Обрабатывает запрос с post endPoint'а
 func handlePostRequest(ctx *gin.Context, in *Inside, empl *apptype.Employee, respErr *Err) (int, error) {
 	var (
 		statreq    int
@@ -88,19 +91,18 @@ func handlePostRequest(ctx *gin.Context, in *Inside, empl *apptype.Employee, res
 			respErr.Error = err.Error()
 		} else {
 			log.Printf("Successfully decrypted data: %x", data)
-			if in.Whatdo != "delete" {
-				err = json.Unmarshal(data, empl)
-				if err != nil {
-					log.Print("Couldn't unmarshal data to req (apptype.Employee)")
-					statreq = http.StatusBadRequest
-					respErr.Error = err.Error()
-				}
+			err = json.Unmarshal(data, empl)
+			if err != nil {
+				log.Print("Couldn't unmarshal data to req (apptype.Employee)")
+				statreq = http.StatusBadRequest
+				respErr.Error = err.Error()
 			}
 		}
 	}
 	return statreq, err
 }
 
+// Обрабатывает запрос с get endPoint'а
 func handleGetRequest(ctx *gin.Context, respErr *Err) (int, int, int, error) {
 	var (
 		id, limit, statreq int
@@ -124,6 +126,7 @@ func handleGetRequest(ctx *gin.Context, respErr *Err) (int, int, int, error) {
 	return id, limit, statreq, err
 }
 
+// Подготавливает ответ от сервера клиенту
 func prepareResponse(body []byte) []byte {
 	var (
 		response, encryptMes []byte
@@ -144,6 +147,29 @@ func prepareResponse(body []byte) []byte {
 	return response
 }
 
+// @Summary Update any kind of information about an employee
+// @Description Update or modify employee information based on the action specified in {whatdo}.
+// The {whatdo} parameter can be "new", "update", "delete", "sub", or "unsub". Depending on the action, the request
+// payload and the parameters required will vary:
+// - "new": Adds a new employee. Do not provide {emplid}. Send the employee data as JSON.
+// - "update": Updates an existing employee. Provide all employee details in the JSON payload and specify {emplid}.
+// - "delete": Deletes an employee. Provide only the Id field in the JSON payload.
+// - "sub": Subscribes one employee to another. Provide the Id field in the JSON payload for the employee being subscribed and {emplid} for the target employee.
+// - "unsub": Unsubscribes one employee from another. Provide the Id field in the JSON payload for the employee being unsubscribed and {emplid} for the target employee.
+// If the process is successful, the response will be a string "The employee has been updated".
+// In case of an error, the response will be a JSON object of rest.Err. If there is an encryption error, a plain string will be returned.
+// @Accept json
+// @Produce string
+// @Param   whatdo      path    string  	false   "What app should do: new, update, delete, sub, unsub"
+// @Param   emplid	    path    string  	false   "The second Employee ID"
+// @Param 	Id 			query 	integer 	false 	"The first Employee ID"
+// @Param 	Name 		query 	string		false	"Employee's Name"
+// @Param	Nickname	query	string		false	"Employee's Nickname"
+// @Param 	Email		query	string		false	"Employee's Email"
+// @Param	Birthday	query	string		false	"Employee's Birthday"
+// @Success 200 {string}  string "The employee has been updated"
+// @Failure 400 {object} rest.Err
+// @Router /congratulations/employees/{whatdo}/{emplid} [post]
 func UpdateEmployees(g *gin.Engine) {
 	g.POST("congratulations/employees/:whatdo/:emplid", func(ctx *gin.Context) {
 		log.Print("Someone has just called congratulations/employees/:whatdo/:emplid")
@@ -183,6 +209,21 @@ func UpdateEmployees(g *gin.Engine) {
 	})
 }
 
+// @Summary Get Employees Info
+// @Description Retrieves an array of employees based on the specified employee ID and limit.
+// If you want to get an array with an employee's subscription, you must specify the ID.
+// To get a variable length of array, specify the limit. The default limit is 15.
+// If successful, the response will be an array of *apptype.Employee.
+// In case of an error, the response will be a JSON object of rest.Err.
+// If the response is a plain string, it indicates an encryption error. Please contact the developer.
+// @Accept url
+// @Produce json
+// @Param   id      path    string  false   "Employee ID"
+// @Param   limit   path    string  false   "Limit"
+// @Success 200 {array}  apptype.Employee
+// @Failure 400 {object} rest.Err
+// @Failure 400 {string} string
+// @Router /congratulations/employees/{id}/{limit} [get]
 func GetEmployees(g *gin.Engine) {
 	g.GET("congratulations/employees/:id/:limit", func(ctx *gin.Context) {
 		log.Print("Someone has just called congratulations/employees/:id/:limit")
