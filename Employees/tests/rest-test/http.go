@@ -11,11 +11,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/l1qwie/Congratulations/Employees/api/rest"
-	"github.com/l1qwie/Congratulations/Employees/apptype"
-	"github.com/l1qwie/Congratulations/Employees/tests/redis"
+	"Employees/api/rest"
+	"Employees/apptype"
+	"Employees/tests/redis"
 )
 
 // Создает клиента для https
@@ -28,21 +27,6 @@ func createClient() *http.Client {
 		},
 	}
 	return client
-}
-
-// Генерирует симметричный ключ для шифрования https-запросов
-func generateSymKey(filePath string) []byte {
-	//AES-256
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		panic(err)
-	}
-	err = os.WriteFile(filePath, key, 0600)
-	if err != nil {
-		panic(err)
-	}
-	return key
 }
 
 // Шифрует данные отправляемые на сервер
@@ -373,7 +357,6 @@ func StartEmployeeTests() {
 	log.Print("Tests StartEmployeeTests() started")
 	TRCL := new(redis.TestRedClient)
 	TRCL.Cl, err = redis.AddClient()
-	apptype.SymKey = generateSymKey("symmetric-key.bin")
 	if err != nil {
 		panic(err)
 	}

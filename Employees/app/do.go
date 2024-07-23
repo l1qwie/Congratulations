@@ -6,8 +6,9 @@ import (
 	"log"
 	"strconv"
 
+	"Employees/apptype"
+
 	"github.com/go-redis/redis/v8"
-	"github.com/l1qwie/Congratulations/Employees/apptype"
 )
 
 const deflimit int = 15

@@ -11,9 +11,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"Employees/app"
+	"Employees/apptype"
+
 	"github.com/gin-gonic/gin"
-	"github.com/l1qwie/Congratulations/Employees/app"
-	"github.com/l1qwie/Congratulations/Employees/apptype"
 )
 
 type Err struct {

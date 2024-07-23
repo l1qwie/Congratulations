@@ -1,5 +1,6 @@
 package apptype
 
+// AES-256
 var SymKey []byte
 
 type Employee struct {

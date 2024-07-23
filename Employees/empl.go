@@ -1,12 +1,16 @@
-package employees
+package main
 
 import (
 	"fmt"
 	"log"
+	"os"
+
+	"Employees/api/rest"
+	"Employees/apptype"
+
+	resttest "Employees/tests/rest-test"
 
 	"github.com/gin-gonic/gin"
-	"github.com/l1qwie/Congratulations/Employees/api/rest"
-	resttest "github.com/l1qwie/Congratulations/Employees/tests/rest-test"
 )
 
 // Запускает микросервис Employees
@@ -14,8 +18,8 @@ func StartEmployeeServer() {
 	router := gin.Default()
 	rest.GetEmployees(router)
 	rest.UpdateEmployees(router)
-	certFile := "server.crt"
-	keyFile := "server.key"
+	certFile := "keys/server.crt"
+	keyFile := "keys/server.key"
 
 	log.Print("Starting HTTPS server on :8099")
 	err := router.RunTLS(":8099", certFile, keyFile)
@@ -24,8 +28,18 @@ func StartEmployeeServer() {
 	}
 }
 
+// Вынимает данные о ключе шифрования из файла (сгенерирован до запуска приложения)
+func pullSymKey(filePath string) {
+	var err error
+	apptype.SymKey, err = os.ReadFile(filePath)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Запускает сервер и тесты для микросервиса Employees
-func StartEmployeeTests() {
+func main() {
+	pullSymKey("keys/symmetric-key.bin")
 	go StartEmployeeServer()
 	resttest.StartEmployeeTests()
 }

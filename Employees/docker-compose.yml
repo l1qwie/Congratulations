@@ -3,7 +3,6 @@ networks:
     external: true
 
 services:
-  
   redis:
     restart: always
     image: redis:latest
@@ -12,11 +11,12 @@ services:
     networks:
       - congratulations
     command: redis-server --loglevel ${REDIS_LOGLEVEL} # debug, verbose, notice, warning
-  
+
   empl:
-    build: .
+    image: employees
     networks:
       - congratulations
     depends_on:
       - redis
     command: ["wait-for-it.sh", "redis:6379", "--", "/app/bin"]
+  

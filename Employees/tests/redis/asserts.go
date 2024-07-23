@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/l1qwie/Congratulations/Employees/apptype"
+	"Employees/apptype"
 )
 
 // Проверяет удаленного работника из хэш-таблицы
