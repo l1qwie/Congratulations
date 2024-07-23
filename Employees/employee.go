@@ -1,17 +1,32 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"Employees/api/kafka/consumer"
 	"Employees/api/rest"
+	"Employees/app"
 	"Employees/apptype"
 
-	resttest "Employees/tests/rest-test"
+	"Employees/tests/kafka"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 )
+
+// Добавляет редис-клиента
+func addClient() (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "",
+		DB:       0,
+	})
+	_, err := client.Ping(context.Background()).Result()
+	return client, err
+}
 
 // Запускает микросервис Employees
 func StartEmployeeServer() {
@@ -39,7 +54,16 @@ func pullSymKey(filePath string) {
 
 // Запускает сервер и тесты для микросервиса Employees
 func main() {
+	var err error
 	pullSymKey("keys/symmetric-key.bin")
-	go StartEmployeeServer()
-	resttest.StartEmployeeTests()
+	app.Client = new(app.RedClient)
+	app.Client.Cl, err = addClient()
+	if err != nil {
+		panic(err)
+	}
+	log.Print("The connection to redis is successful")
+	//sgo StartEmployeeServer()
+	go consumer.Consumer()
+	kafka.TestConsumer()
+	//resttest.StartEmployeeTests()
 }

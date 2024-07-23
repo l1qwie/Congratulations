@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 
+	"Employees/api/kafka/producer"
 	"Employees/apptype"
 
 	"github.com/go-redis/redis/v8"
@@ -14,25 +15,16 @@ import (
 const deflimit int = 15
 
 type RedClient struct {
-	cl *redis.Client
+	Cl *redis.Client
 }
 
-// Добавляет редис-клиента
-func addClient() (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
-		Password: "",
-		DB:       0,
-	})
-	_, err := client.Ping(context.Background()).Result()
-	return client, err
-}
+var Client *RedClient
 
 // Получает данные из хэш-таблицы по определенному employeeid
 func (RCL *RedClient) getEmployeeByID(subid int) (*apptype.Employee, error) {
 	key := fmt.Sprintf("employeeid:%d", subid)
 	empl := new(apptype.Employee)
-	fields, err := RCL.cl.HGetAll(context.Background(), key).Result()
+	fields, err := RCL.Cl.HGetAll(context.Background(), key).Result()
 	if err == nil {
 		empl = &apptype.Employee{
 			Id:       subid,
@@ -51,7 +43,7 @@ func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Empl
 	var employees []*apptype.Employee
 	log.Printf("Got into selectSubEmployees with params: employeeid: %d, limit: %d", employeeid, limit)
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
-	subs, err := RCL.cl.SMembers(context.Background(), key).Result()
+	subs, err := RCL.Cl.SMembers(context.Background(), key).Result()
 	if err == nil {
 		log.Print("It has succsessfuly just pulled all subids from redis")
 		subid := 0
@@ -75,7 +67,7 @@ func (RCL *RedClient) selectSubEmployees(employeeid, limit int) ([]*apptype.Empl
 // Получает все id работников из множества
 func (RCL *RedClient) getAllEmployeeIDs() ([]string, error) {
 	key := "employee_ids"
-	ids, err := RCL.cl.SMembers(context.Background(), key).Result()
+	ids, err := RCL.Cl.SMembers(context.Background(), key).Result()
 	return ids, err
 }
 
@@ -108,9 +100,9 @@ func (RCL *RedClient) selectEmployees(limit int) ([]*apptype.Employee, error) {
 }
 
 // Добавляет работника в хэш-таблицу и также добавляет id работника в множество
-func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
+func (RCL *RedClient) NewEmpl(empl *apptype.Employee) error {
 	key := fmt.Sprintf("employeeid:%d", empl.Id)
-	_, err := RCL.cl.HSet(context.Background(), key, map[string]interface{}{
+	_, err := RCL.Cl.HSet(context.Background(), key, map[string]interface{}{
 		"name":     empl.Name,
 		"nickname": empl.Nickname,
 		"email":    empl.Email,
@@ -118,15 +110,15 @@ func (RCL *RedClient) newEmpl(empl *apptype.Employee) error {
 	}).Result()
 	if err == nil {
 		idKey := "employee_ids"
-		_, err = RCL.cl.SAdd(context.Background(), idKey, empl.Id).Result()
+		_, err = RCL.Cl.SAdd(context.Background(), idKey, empl.Id).Result()
 	}
 	return err
 }
 
 // Удлаяет работника из хэш-таблицы
-func (RCL *RedClient) deleleEmpl(id int) error {
+func (RCL *RedClient) DeleleEmpl(id int) error {
 	key := fmt.Sprintf("employeeid:%d", id)
-	err := RCL.cl.Del(context.Background(), key).Err()
+	err := RCL.Cl.Del(context.Background(), key).Err()
 	if err != nil {
 		log.Print(err)
 	}
@@ -134,75 +126,71 @@ func (RCL *RedClient) deleleEmpl(id int) error {
 }
 
 // Обновляет данные работника. По сути - вызывает функцию удаления и функцию добавления нового работника
-func (RCL *RedClient) updEmpl(empl *apptype.Employee) error {
-	err := RCL.deleleEmpl(empl.Id)
+func (RCL *RedClient) UpdEmpl(empl *apptype.Employee, id int) error {
+	err := RCL.DeleleEmpl(id)
 	if err == nil {
-		err = RCL.newEmpl(empl)
+		err = RCL.NewEmpl(empl)
 	}
 	return err
 }
 
 // Добавляет значение в множество (подписывает)
-func (RCL *RedClient) addSub(employeeid, subtoId int) error {
+func (RCL *RedClient) AddSub(employeeid, subtoId int) error {
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
-	_, err := RCL.cl.SAdd(context.Background(), key, subtoId).Result()
+	_, err := RCL.Cl.SAdd(context.Background(), key, subtoId).Result()
 	return err
 }
 
 // Убирает значение из множества (отписывает)
-func (RCL *RedClient) unSub(employeeid, unsubtoId int) error {
+func (RCL *RedClient) UnSub(employeeid, unsubtoId int) error {
 	key := fmt.Sprintf("subscriptions:%d", employeeid)
-	_, err := RCL.cl.SRem(context.Background(), key, unsubtoId).Result()
+	_, err := RCL.Cl.SRem(context.Background(), key, unsubtoId).Result()
 	return err
 }
 
 // Делает поиск нужного employeeID в множестве
 func (RCL *RedClient) findEmployee(id int) (bool, error) {
-	found, err := RCL.cl.SIsMember(context.Background(), "employee_ids", id).Result()
+	found, err := RCL.Cl.SIsMember(context.Background(), "employee_ids", id).Result()
 	return found, err
 }
 
 // Делает предварительные проверки, а конкретнее: на существование employeeID в бд и значение переменной whatdo и перенавправляет на нужную функцию
 func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemplid string) error {
 	var (
-		err error
-		id  int
-		ok  bool
+		err     error
+		id      int
+		ok, ok2 bool
 	)
+	ok2 = true
 	log.Printf("Got in updateEmployee with params: empl: %v, whatdo: %s, diffrentemplid: %s", *empl, whatdo, diffrentemplid)
 	if whatdo != "new" {
-		if whatdo == "update" {
+		if whatdo == "update" || whatdo == "sub" || whatdo == "unsub" {
 			id, err = strconv.Atoi(diffrentemplid)
 			if err == nil {
+				log.Print("Has successfuly converted string to int")
 				ok, err = RCL.findEmployee(id)
+				if err == nil {
+					if whatdo == "sub" || whatdo == "unsub" {
+						ok2, err = RCL.findEmployee(empl.Id)
+					}
+				}
 			}
 		} else {
 			ok, err = RCL.findEmployee(empl.Id)
 		}
-		if ok {
-			if whatdo == "sub" || whatdo == "unsub" {
-				id, err = strconv.Atoi(diffrentemplid)
-				if err == nil {
-					log.Print("Has successfuly converted string to int")
-					ok, err = RCL.findEmployee(id)
-					if ok {
-						if whatdo == "sub" {
-							err = RCL.addSub(empl.Id, id)
-						} else {
-							err = RCL.unSub(empl.Id, id)
-						}
-					} else {
-						if err == nil {
-							err = fmt.Errorf("wasn't able to find recieved employee ID for subscribing. You might try to send a diffrent one")
-						}
-					}
-				}
+		if ok && ok2 {
+			if whatdo == "sub" {
+				log.Print(`Whatdo is "delete"`)
+				err = RCL.AddSub(empl.Id, id)
+			} else if whatdo == "unsub" {
+				log.Print(`Whatdo is "delete"`)
+				err = RCL.UnSub(empl.Id, id)
 			} else if whatdo == "delete" {
 				log.Print(`Whatdo is "delete"`)
-				err = RCL.deleleEmpl(empl.Id)
+				err = RCL.DeleleEmpl(empl.Id)
 			} else if whatdo == "update" {
 				log.Print(`Whatdo is "update"`)
-				err = RCL.updEmpl(empl)
+				err = RCL.UpdEmpl(empl, id)
 			}
 		} else {
 			if err == nil {
@@ -211,7 +199,7 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 		}
 	} else if whatdo == "new" {
 		log.Print(`Whatdo is "new"`)
-		err = RCL.newEmpl(empl)
+		err = RCL.NewEmpl(empl)
 	} else {
 		err = fmt.Errorf(`"whatdo" param should be "new", "update", "delete", "sub" or "unsub"`)
 	}
@@ -226,28 +214,23 @@ func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 		err       error
 	)
 	log.Print("Got into GetEmployees func in the bussines logic")
-	RDCL := new(RedClient)
-	RDCL.cl, err = addClient()
-	if err == nil {
-		log.Print("The connection to redis is successful")
-		if id != 0 {
-			log.Print("The recieved id isn't 0")
-			if limit != 0 {
-				log.Print("The recieved limit isn't 0")
-				employees, err = RDCL.selectSubEmployees(id, limit)
-			} else {
-				log.Print("The recieved limit is 0")
-				employees, err = RDCL.selectSubEmployees(id, deflimit)
-			}
+	if id != 0 {
+		log.Print("The recieved id isn't 0")
+		if limit != 0 {
+			log.Print("The recieved limit isn't 0")
+			employees, err = Client.selectSubEmployees(id, limit)
 		} else {
-			log.Print("The recieved id is 0")
-			if limit != 0 {
-				log.Print("The recieved limit isn't 0")
-				employees, err = RDCL.selectEmployees(limit)
-			} else {
-				log.Print("The recieved limit is 0")
-				employees, err = RDCL.selectEmployees(deflimit)
-			}
+			log.Print("The recieved limit is 0")
+			employees, err = Client.selectSubEmployees(id, deflimit)
+		}
+	} else {
+		log.Print("The recieved id is 0")
+		if limit != 0 {
+			log.Print("The recieved limit isn't 0")
+			employees, err = Client.selectEmployees(limit)
+		} else {
+			log.Print("The recieved limit is 0")
+			employees, err = Client.selectEmployees(deflimit)
 		}
 	}
 	log.Print("Got out of GetEmployees func in the bussines logic")
@@ -261,15 +244,13 @@ func UpdateEmployees(empl *apptype.Employee, whatdo, diffrentemplid string) (str
 		err    error
 	)
 	log.Print("Got into UpdateEmployees func in the bussines logic")
-	RDCL := new(RedClient)
-	RDCL.cl, err = addClient()
+	err = Client.updateEmployee(empl, whatdo, diffrentemplid)
 	if err == nil {
-		log.Print("The connection to redis is successful")
-		err = RDCL.updateEmployee(empl, whatdo, diffrentemplid)
-		if err == nil {
-			log.Print("Has successfuly updated redis")
-			answer = "The employee has been updated"
-		}
+		log.Print("Has successfuly updated redis")
+		answer = "The employee has been updated"
+		// Не важно, были ли данные в diffrentemplid так как в противном случае - просто будет передан дефолт значение int
+		id, _ := strconv.Atoi(diffrentemplid)
+		producer.TellChanges(empl, whatdo, id)
 	}
 	log.Print("Got out of UpdateEmployees func in the bussines logic")
 	return answer, err

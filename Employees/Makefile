@@ -3,7 +3,8 @@ build:
 
 remove:
 	docker compose stop \
-	&& docker compose rm/
+	&& docker compose rm \
+	&& sudo rm -rf kafkadata/
 
 up-debug:
 	REDIS_LOGLEVEL=debug docker compose -f docker-compose.yml up --force-recreate

@@ -281,7 +281,7 @@ func testChangeEmployee(TRCL *redis.TestRedClient) {
 	if answer != "The employee has been updated" {
 		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
 	}
-	if !TRCL.CheckUpdatedOrNewEmployee(req) {
+	if !TRCL.CheckUpdatedOrNewEmployee(req, true, "111") {
 		panic("The employee wasn't updated")
 	}
 }
@@ -303,7 +303,7 @@ func testNewEmployee(TRCL *redis.TestRedClient) {
 	if answer != "The employee has been updated" {
 		panic(fmt.Sprintf(`Expected: answer = "The employee has been updated". Recieved: answer = "%s"`, answer))
 	}
-	if !TRCL.CheckUpdatedOrNewEmployee(req) {
+	if !TRCL.CheckUpdatedOrNewEmployee(req, false, "") {
 		panic("The new employee wasn't added")
 	}
 }
