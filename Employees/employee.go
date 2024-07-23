@@ -12,6 +12,7 @@ import (
 	"Employees/apptype"
 
 	"Employees/tests/kafka"
+	resttest "Employees/tests/rest-test"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -62,8 +63,10 @@ func main() {
 		panic(err)
 	}
 	log.Print("The connection to redis is successful")
-	//sgo StartEmployeeServer()
+
+	go StartEmployeeServer()
 	go consumer.Consumer()
+
+	resttest.StartEmployeeTests()
 	kafka.TestConsumer()
-	//resttest.StartEmployeeTests()
 }

@@ -9,13 +9,20 @@ import (
 	"github.com/IBM/sarama"
 )
 
-const maxRetries int = 5
-const retryBackoff time.Duration = 2 * time.Second
+const (
+	maxRetries    int           = 5
+	retryBackoff  time.Duration = 2 * time.Second
+	Employee      int32         = 0
+	Authorization int32         = 1
+	Notifications int32         = 2
+	Subscribe     int32         = 3
+)
 
-func send(jd []byte, topic string, producer sarama.AsyncProducer) {
+func send(jd []byte, topic string, producer sarama.AsyncProducer, partition int32) {
 	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(jd),
+		Topic:     topic,
+		Value:     sarama.ByteEncoder(jd),
+		Partition: partition,
 	}
 	continuworking := true
 	attempt := 0
@@ -72,5 +79,8 @@ func TellChanges(employee *apptype.Employee, whatdo string, secondid int) {
 		return
 	}
 
-	send(jb, topic, producer)
+	send(jb, topic, producer, Employee)
+	//go send(jb, topic, producer, Authorization)
+	//go (jb, topic, producer, Notifications)
+	//go (jb, topic, producer, Subscribe)
 }

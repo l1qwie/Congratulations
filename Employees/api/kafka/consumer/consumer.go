@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	add    string = "new"
-	update string = "update"
-	delete string = "delete"
-	sub    string = "sub"
-	unsub  string = "unsub"
+	add      string = "new"
+	update   string = "update"
+	delete   string = "delete"
+	sub      string = "sub"
+	unsub    string = "unsub"
+	Employee int32  = 0
 )
 
 func whichWay(kafkaemployee *apptype.KafkaEmployee) {
@@ -69,7 +70,7 @@ func Consumer() {
 	}
 	defer consumer.Close()
 
-	partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
+	partitionConsumer, err := consumer.ConsumePartition(topic, Employee, sarama.OffsetNewest)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start consumer partition add: %s", err))
 	}

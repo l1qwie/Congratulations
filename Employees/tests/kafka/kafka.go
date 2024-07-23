@@ -106,7 +106,7 @@ func TestConsumer() {
 	TRCL.SubscribeEmployees()
 	defer TRCL.DeleteEmployees()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second / 10)
 
 	testNew(TRCL)
 	testUpdate(TRCL)

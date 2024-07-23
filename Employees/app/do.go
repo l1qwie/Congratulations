@@ -161,48 +161,43 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 		id      int
 		ok, ok2 bool
 	)
+	ok = true
 	ok2 = true
 	log.Printf("Got in updateEmployee with params: empl: %v, whatdo: %s, diffrentemplid: %s", *empl, whatdo, diffrentemplid)
-	if whatdo != "new" {
-		if whatdo == "update" || whatdo == "sub" || whatdo == "unsub" {
-			id, err = strconv.Atoi(diffrentemplid)
-			if err == nil {
-				log.Print("Has successfuly converted string to int")
-				ok, err = RCL.findEmployee(id)
-				if err == nil {
-					if whatdo == "sub" || whatdo == "unsub" {
-						ok2, err = RCL.findEmployee(empl.Id)
-					}
-				}
-			}
-		} else {
-			ok, err = RCL.findEmployee(empl.Id)
+	if whatdo != "update" {
+		ok, err = RCL.findEmployee(empl.Id)
+	}
+	if whatdo == "update" || whatdo == "sub" || whatdo == "unsub" {
+		id, err = strconv.Atoi(diffrentemplid)
+		if err == nil {
+			log.Print("Has successfuly converted string to int")
+			ok2, err = RCL.findEmployee(id)
+			log.Print(ok2, err)
 		}
-		if ok && ok2 {
-			if whatdo == "sub" {
-				log.Print(`Whatdo is "delete"`)
-				err = RCL.AddSub(empl.Id, id)
-			} else if whatdo == "unsub" {
-				log.Print(`Whatdo is "delete"`)
-				err = RCL.UnSub(empl.Id, id)
-			} else if whatdo == "delete" {
-				log.Print(`Whatdo is "delete"`)
-				err = RCL.DeleleEmpl(empl.Id)
-			} else if whatdo == "update" {
-				log.Print(`Whatdo is "update"`)
-				err = RCL.UpdEmpl(empl, id)
-			}
-		} else {
-			if err == nil {
-				err = fmt.Errorf("wasn't able to find recieved employee ID. You might try to send a diffrent one")
-			}
+	}
+	if ok && ok2 {
+		if whatdo == "sub" {
+			log.Print(`Whatdo is "delete"`)
+			err = RCL.AddSub(empl.Id, id)
+		} else if whatdo == "unsub" {
+			log.Print(`Whatdo is "delete"`)
+			err = RCL.UnSub(empl.Id, id)
+		} else if whatdo == "delete" {
+			log.Print(`Whatdo is "delete"`)
+			err = RCL.DeleleEmpl(empl.Id)
+		} else if whatdo == "update" {
+			log.Print(`Whatdo is "update"`)
+			err = RCL.UpdEmpl(empl, id)
 		}
-	} else if whatdo == "new" {
+	} else if whatdo == "new" && !ok {
 		log.Print(`Whatdo is "new"`)
 		err = RCL.NewEmpl(empl)
 	} else {
-		err = fmt.Errorf(`"whatdo" param should be "new", "update", "delete", "sub" or "unsub"`)
+		if err == nil {
+			err = fmt.Errorf("wasn't able to find recieved employee ID. You might try to send a diffrent one")
+		}
 	}
+
 	log.Print("Got out of updateEmployee")
 	return err
 }
