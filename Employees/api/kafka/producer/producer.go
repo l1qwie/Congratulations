@@ -54,7 +54,7 @@ func TellChanges(employee *apptype.Employee, whatdo string, secondid int) {
 	producerConfig.Producer.Retry.Backoff = 100 * time.Millisecond
 	producerConfig.Producer.Return.Successes = true
 	producerConfig.Producer.Timeout = 10 * time.Second
-	brokers := []string{"kafka:9092"}
+	brokers := []string{"congratulations-kafka:9092"}
 
 	producer, err := sarama.NewAsyncProducer(brokers, producerConfig)
 	if err != nil {

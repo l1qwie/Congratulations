@@ -164,9 +164,7 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 	ok = true
 	ok2 = true
 	log.Printf("Got in updateEmployee with params: empl: %v, whatdo: %s, diffrentemplid: %s", *empl, whatdo, diffrentemplid)
-	if whatdo != "update" {
-		ok, err = RCL.findEmployee(empl.Id)
-	}
+	ok, err = RCL.findEmployee(empl.Id)
 	if whatdo == "update" || whatdo == "sub" || whatdo == "unsub" {
 		id, err = strconv.Atoi(diffrentemplid)
 		if err == nil {
@@ -175,7 +173,7 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 			log.Print(ok2, err)
 		}
 	}
-	if ok && ok2 {
+	if whatdo == "update" && !ok || ok && ok2 {
 		if whatdo == "sub" {
 			log.Print(`Whatdo is "delete"`)
 			err = RCL.AddSub(empl.Id, id)
@@ -194,7 +192,11 @@ func (RCL *RedClient) updateEmployee(empl *apptype.Employee, whatdo, diffrentemp
 		err = RCL.NewEmpl(empl)
 	} else {
 		if err == nil {
-			err = fmt.Errorf("wasn't able to find recieved employee ID. You might try to send a diffrent one")
+			if whatdo == "update" {
+				err = fmt.Errorf("you must send an uncreated new employee.Id")
+			} else {
+				err = fmt.Errorf("wasn't able to find recieved employee ID. You might try to send a diffrent one")
+			}
 		}
 	}
 

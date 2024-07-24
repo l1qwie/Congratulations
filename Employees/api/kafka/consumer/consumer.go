@@ -63,7 +63,7 @@ func Consumer() {
 	topic := "employee"
 	consumerConfig := sarama.NewConfig()
 	consumerConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
-	brokers := []string{"kafka:9092"}
+	brokers := []string{"congratulations-kafka:9092"}
 	consumer, err := sarama.NewConsumer(brokers, consumerConfig)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start consumer: %s", err))
