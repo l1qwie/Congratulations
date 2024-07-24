@@ -4,7 +4,12 @@ import (
 	"Notifications/apptype"
 	"database/sql"
 	"fmt"
-	"net/smtp"
+	"log"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ses"
 )
 
 var Con *Connection
@@ -29,17 +34,104 @@ func (c *Connection) updateNotificated() error {
 	return err
 }
 
+func (c *Connection) FindWhoShouldBeNotified() map[*apptype.Employee][]*apptype.Employee {
+	var birthdayboys []*apptype.Employee
+	members := make(map[*apptype.Employee][]*apptype.Employee)
+	rows, err := c.DB.Query(`
+		SELECT e.id, e.name, e.nickname, e.birthday FROM Employees e
+		JOIN Subscriptions s ON s.subtoid = e.id
+		WHERE s.notificated = FALSE
+		ORDER BY e.id`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() && err == nil {
+			employee := new(apptype.Employee)
+			err = rows.Scan(&employee.Id, &employee.Name, &employee.Nickname, &employee.Birthday)
+			if err == nil {
+				birthdayboys = append(birthdayboys, employee)
+			}
+		}
+	}
+	if err == nil {
+		for _, birthdayboy := range birthdayboys {
+			rows, err = c.DB.Query(`
+				SELECT e.id, e.name, e.nickname, e.email FROM Employees e
+				JOIN Subscriptions s ON s.subedid = e.id
+				WHERE s.subtoid = $1 AND s.notificated = FALSE`, birthdayboy.Id)
+			if err == nil {
+				var congratulators []*apptype.Employee
+				defer rows.Close()
+				for rows.Next() && err == nil {
+					employee := new(apptype.Employee)
+					err = rows.Scan(&employee.Id, &employee.Name, &employee.Nickname, &employee.Email)
+					if err == nil {
+						congratulators = append(congratulators, employee)
+					}
+				}
+				members[birthdayboy] = congratulators
+			}
+		}
+	}
+	return members
+}
+
 func sendALetter(notified *apptype.Notified) error {
-	smtpServer := "smtp.gmail.com:587"
-	auth := smtp.PlainAuth("", "mya487466@gmail.com", "me_ya_12345566_TestEmail", "smtp.gmail.com")
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("eu-north-1"),
+	})
+	if err == nil {
+		svc := ses.New(sess)
+		message := fmt.Sprintf("Hello, %s %s! You've subscribed to %s or maybe you know them as %s for a while, and it will be their Birthday soon! Their Birthday is going to be on %s. This is a message from the congratulations service, which can notify you to be prepared! Good luck!",
+			notified.NameSubed, notified.NicknameSubed, notified.NameBirth, notified.NicknameBirth, notified.Birthday)
+		err = sendEmail("mya487466@gmail.com", message, "Birthday Reminder!", []string{notified.Email}, svc)
+	}
+	return err
+}
 
-	// Настройка сообщения
-	from := "mya487466@gmail.com"
-	to := []string{notified.Email}
-	msg := fmt.Sprintf("Hello, %s! I've subdcribed to %s or maybe you could know them us %s for a while and there'll be they Brithday! Their Birthday is going to be on %s This is a message from congratulations service which can notice you to be prepared! See you soon!",
-		notified.NameSubed, notified.NameBirth, notified.NicknameBirth, notified.Birthday)
+func sendEmail(from, body, subject string, to []string, svc *ses.SES) error {
+	msg := &ses.SendEmailInput{
+		Destination: &ses.Destination{
+			ToAddresses: aws.StringSlice(to),
+		},
+		Message: &ses.Message{
+			Body: &ses.Body{
+				Text: &ses.Content{
+					Charset: aws.String("UTF-8"),
+					Data:    aws.String(body),
+				},
+			},
+			Subject: &ses.Content{
+				Charset: aws.String("UTF-8"),
+				Data:    aws.String(subject),
+			},
+		},
+		Source: aws.String(from),
+	}
 
-	return smtp.SendMail(smtpServer, auth, from, to, []byte(msg))
+	_, err := svc.SendEmail(msg)
+	if err != nil {
+		log.Print(err)
+	}
+	return err
+}
+
+func prepareLetters(members map[*apptype.Employee][]*apptype.Employee) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("eu-north-1"),
+	})
+	if err == nil {
+		from := "mya487466@gmail.com"
+		subject := "Birthday Reminder!"
+		svc := ses.New(sess)
+		for key, value := range members {
+			for _, empl := range value {
+				message := fmt.Sprintf("Hello, %s %s! You've subscribed to %s or maybe you know them as %s for a while, and it will be their Birthday soon! Their Birthday is going to be on %s. This is a message from the congratulations service, which can notify you to be prepared! Good luck!",
+					empl.Name, empl.Nickname, key.Name, key.Nickname, key.Birthday)
+				sendEmail(from, message, subject, []string{empl.Email}, svc)
+			}
+
+		}
+	}
 }
 
 func Notify(notified *apptype.Notified) (string, error) {
@@ -52,4 +144,14 @@ func Notify(notified *apptype.Notified) (string, error) {
 		}
 	}
 	return answer, err
+}
+
+func Guardian() {
+	for {
+		members := Con.FindWhoShouldBeNotified()
+		if len(members) > 0 {
+			prepareLetters(members)
+		}
+		time.Sleep(time.Second)
+	}
 }

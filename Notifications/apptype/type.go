@@ -30,6 +30,14 @@ type Notified struct {
 	Birthday      string `json:"birthday"`
 }
 
+type Employee struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
+	Birthday string `json:"birthday"`
+}
+
 func ConnectToDatabase() (*sql.DB, error) {
 	db, err := sql.Open("postgres", docConnect())
 	if err != nil {

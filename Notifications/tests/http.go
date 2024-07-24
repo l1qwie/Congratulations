@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"Notifications/app"
 	"Notifications/apptype"
 	"bytes"
 	"crypto/aes"
@@ -12,6 +13,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 )
 
 // Создает клиента для https
@@ -145,4 +147,200 @@ func TestNotifications() {
 	Con.SubscribeToEmployee()
 
 	sendNotifier()
+}
+
+func testFedya(memebers map[*apptype.Employee][]*apptype.Employee) {
+	fedya := &apptype.Employee{
+		Id:       131,
+		Name:     "Fedor",
+		Nickname: "fedor999",
+		Birthday: "1919-09-09",
+	}
+	misha := &apptype.Employee{
+		Id:       127,
+		Name:     "Misha",
+		Nickname: "misha228",
+		Email:    "trashfly@ya.ru",
+	}
+	katya := &apptype.Employee{
+		Id:       128,
+		Name:     "Katia",
+		Nickname: "krasotka_katusha",
+		Email:    "example-example@gmail.com",
+	}
+	alesha := &apptype.Employee{
+		Id:       129,
+		Name:     "Alesha",
+		Nickname: "alexsei",
+		Email:    "me@yahoo.com",
+	}
+	fedyaval, fedyaok := memebers[fedya]
+	fedyacompare := []*apptype.Employee{misha, katya, alesha}
+	if fedyaok {
+		log.Print("fedyaok is true")
+		for _, val := range fedyaval {
+			for i, val2 := range fedyacompare {
+				if !reflect.DeepEqual(val, val2) {
+					if i+1 == len(fedyacompare) {
+						panic(fmt.Sprintf("Data in fedyaval: %v couldn't be found in fedyacompare: %v", val, fedyacompare))
+					}
+				}
+				log.Printf("Data in fedyaval: %v. Data in fedyacompare: %v", val, val2)
+			}
+		}
+	}
+}
+
+func testOleja(memebers map[*apptype.Employee][]*apptype.Employee) {
+	oleja := &apptype.Employee{
+		Id:       126,
+		Name:     "Oleja",
+		Nickname: "oleja_krut",
+		Birthday: "1980-09-20",
+	}
+	misha := &apptype.Employee{
+		Id:       127,
+		Name:     "Misha",
+		Nickname: "misha228",
+		Email:    "trashfly@ya.ru",
+	}
+	nastya := &apptype.Employee{
+		Id:       130,
+		Name:     "Nastya",
+		Nickname: "princes",
+		Email:    "letmefly@gmail.com",
+	}
+	olejaval, olejaok := memebers[oleja]
+	olejacompare := []*apptype.Employee{misha, nastya}
+	if olejaok {
+		log.Print("olejaok is true")
+		for _, val := range olejaval {
+			for i, val2 := range olejacompare {
+				if !reflect.DeepEqual(val, val2) {
+					if i+1 == len(olejacompare) {
+						panic(fmt.Sprintf("Data in fedyaval: %v couldn't be found in fedyacompare: %v", val, olejacompare))
+					}
+				}
+				log.Printf("Data in fedyaval: %v. Data in fedyacompare: %v", val, val2)
+			}
+		}
+	}
+}
+
+func testMatvei(memebers map[*apptype.Employee][]*apptype.Employee) {
+	matvei := &apptype.Employee{
+		Id:       132,
+		Name:     "Matvei",
+		Nickname: "cool_juice",
+		Birthday: "1980-10-03",
+	}
+	nastya := &apptype.Employee{
+		Id:       130,
+		Name:     "Nastya",
+		Nickname: "princes",
+		Email:    "letmefly@gmail.com",
+	}
+	misha := &apptype.Employee{
+		Id:       127,
+		Name:     "Misha",
+		Nickname: "misha228",
+		Email:    "trashfly@ya.ru",
+	}
+	katya := &apptype.Employee{
+		Id:       128,
+		Name:     "Katia",
+		Nickname: "krasotka_katusha",
+		Email:    "example-example@gmail.com",
+	}
+	alesha := &apptype.Employee{
+		Id:       129,
+		Name:     "Alesha",
+		Nickname: "alexsei",
+		Email:    "me@yahoo.com",
+	}
+	matveival, matveiok := memebers[matvei]
+	matveicompare := []*apptype.Employee{nastya, misha, katya, alesha}
+	if matveiok {
+		log.Print("matveiok is true")
+		for _, val := range matveival {
+			for i, val2 := range matveicompare {
+				if !reflect.DeepEqual(val, val2) {
+					if i+1 == len(matveicompare) {
+						panic(fmt.Sprintf("Data in fedyaval: %v couldn't be found in fedyacompare: %v", val, matveicompare))
+					}
+				}
+				log.Printf("Data in fedyaval: %v. Data in fedyacompare: %v", val, val2)
+			}
+		}
+	}
+}
+
+func testBogdan(memebers map[*apptype.Employee][]*apptype.Employee) {
+	bogdan := &apptype.Employee{
+		Id:       125,
+		Name:     "Bogdan",
+		Nickname: "l1qwie",
+		Birthday: "2003-02-20",
+	}
+	nastya := &apptype.Employee{
+		Id:       130,
+		Name:     "Nastya",
+		Nickname: "princes",
+		Email:    "letmefly@gmail.com",
+	}
+	katya := &apptype.Employee{
+		Id:       128,
+		Name:     "Katia",
+		Nickname: "krasotka_katusha",
+		Email:    "example-example@gmail.com",
+	}
+	bogdanval, bogdanok := memebers[bogdan]
+	bogdancompare := []*apptype.Employee{nastya, katya}
+	if bogdanok {
+		log.Print("matveiok is true")
+		for _, val := range bogdanval {
+			for i, val2 := range bogdancompare {
+				if !reflect.DeepEqual(val, val2) {
+					if i+1 == len(bogdancompare) {
+						panic(fmt.Sprintf("Data in fedyaval: %v couldn't be found in fedyacompare: %v", val, bogdancompare))
+					}
+				}
+				log.Printf("Data in fedyaval: %v. Data in fedyacompare: %v", val, val2)
+			}
+		}
+	}
+}
+
+func UnitTest() {
+	var err error
+	app.Con = new(app.Connection)
+	app.Con.DB, err = apptype.ConnectToDatabase()
+	if err != nil {
+		panic(err)
+	}
+
+	Con = new(TestConnection)
+	Con.DB, err = apptype.ConnectToDatabase()
+	if err != nil {
+		panic(err)
+	}
+
+	defer Con.DeleteEmployees()
+	defer Con.DeleteSubscriptions()
+
+	Con.Create8Employees()
+	Con.SubEmployeesToEmployees()
+
+	memebers := app.Con.FindWhoShouldBeNotified()
+	log.Print(len(memebers))
+	for key, val := range memebers {
+		log.Printf("Key: %v", key)
+		for _, val2 := range val {
+			log.Printf("Val: %v", val2)
+		}
+	}
+	testFedya(memebers)
+	testOleja(memebers)
+	testMatvei(memebers)
+	testBogdan(memebers)
 }

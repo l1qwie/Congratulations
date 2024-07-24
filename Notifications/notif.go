@@ -34,7 +34,7 @@ func startNotifierServer() {
 	}
 }
 
-func main() {
+func prepareEnv() {
 	var err error
 	pullSymKey("keys/symmetric-key.bin")
 	app.Con = new(app.Connection)
@@ -42,7 +42,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func main() {
+	log.Print("Servese Notifications has been launched")
+	prepareEnv()
 
 	go startNotifierServer()
 	tests.TestNotifications()
+	//tests.UnitTest()
+	log.Print("Servese Notifications has finished its work")
 }
