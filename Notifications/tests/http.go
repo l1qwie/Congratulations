@@ -117,7 +117,7 @@ func sendNotifier() {
 		NicknameSubed: "l1qwie",
 		NicknameBirth: "oleja_krut",
 		Email:         "trashemailbyfly@gmail.com",
-		Birthday:      "20-09-1980",
+		Birthday:      "1980-02-20",
 	}
 	body, err := json.Marshal(notified)
 	if err != nil {
@@ -162,20 +162,20 @@ func testFedya(memebers map[*apptype.Employee][]*apptype.Employee) {
 		Nickname: "misha228",
 		Email:    "trashfly@ya.ru",
 	}
-	katya := &apptype.Employee{
-		Id:       128,
-		Name:     "Katia",
-		Nickname: "krasotka_katusha",
-		Email:    "example-example@gmail.com",
-	}
-	alesha := &apptype.Employee{
-		Id:       129,
-		Name:     "Alesha",
-		Nickname: "alexsei",
-		Email:    "me@yahoo.com",
-	}
+	// katya := &apptype.Employee{
+	// 	Id:       128,
+	// 	Name:     "Katia",
+	// 	Nickname: "krasotka_katusha",
+	// 	Email:    "example-example@gmail.com",
+	// }
+	// alesha := &apptype.Employee{
+	// 	Id:       129,
+	// 	Name:     "Alesha",
+	// 	Nickname: "alexsei",
+	// 	Email:    "me@yahoo.com",
+	// }
 	fedyaval, fedyaok := memebers[fedya]
-	fedyacompare := []*apptype.Employee{misha, katya, alesha}
+	fedyacompare := []*apptype.Employee{misha} //katya, alesha
 	if fedyaok {
 		log.Print("fedyaok is true")
 		for _, val := range fedyaval {
@@ -246,20 +246,20 @@ func testMatvei(memebers map[*apptype.Employee][]*apptype.Employee) {
 		Nickname: "misha228",
 		Email:    "trashfly@ya.ru",
 	}
-	katya := &apptype.Employee{
-		Id:       128,
-		Name:     "Katia",
-		Nickname: "krasotka_katusha",
-		Email:    "example-example@gmail.com",
-	}
-	alesha := &apptype.Employee{
-		Id:       129,
-		Name:     "Alesha",
-		Nickname: "alexsei",
-		Email:    "me@yahoo.com",
-	}
+	// katya := &apptype.Employee{
+	// 	Id:       128,
+	// 	Name:     "Katia",
+	// 	Nickname: "krasotka_katusha",
+	// 	Email:    "example-example@gmail.com",
+	// }
+	// alesha := &apptype.Employee{
+	// 	Id:       129,
+	// 	Name:     "Alesha",
+	// 	Nickname: "alexsei",
+	// 	Email:    "me@yahoo.com",
+	// }
 	matveival, matveiok := memebers[matvei]
-	matveicompare := []*apptype.Employee{nastya, misha, katya, alesha}
+	matveicompare := []*apptype.Employee{nastya, misha} //katya, alesha
 	if matveiok {
 		log.Print("matveiok is true")
 		for _, val := range matveival {
@@ -288,14 +288,14 @@ func testBogdan(memebers map[*apptype.Employee][]*apptype.Employee) {
 		Nickname: "princes",
 		Email:    "letmefly@gmail.com",
 	}
-	katya := &apptype.Employee{
-		Id:       128,
-		Name:     "Katia",
-		Nickname: "krasotka_katusha",
-		Email:    "example-example@gmail.com",
-	}
+	// katya := &apptype.Employee{
+	// 	Id:       128,
+	// 	Name:     "Katia",
+	// 	Nickname: "krasotka_katusha",
+	// 	Email:    "example-example@gmail.com",
+	// }
 	bogdanval, bogdanok := memebers[bogdan]
-	bogdancompare := []*apptype.Employee{nastya, katya}
+	bogdancompare := []*apptype.Employee{nastya} //katya
 	if bogdanok {
 		log.Print("matveiok is true")
 		for _, val := range bogdanval {

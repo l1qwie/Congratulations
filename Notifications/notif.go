@@ -46,10 +46,14 @@ func prepareEnv() {
 
 func main() {
 	log.Print("Servese Notifications has been launched")
+
 	prepareEnv()
 
 	go startNotifierServer()
+	go app.Guardian()
+
 	tests.TestNotifications()
-	//tests.UnitTest()
+	tests.UnitTest()
+
 	log.Print("Servese Notifications has finished its work")
 }

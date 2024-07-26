@@ -7,12 +7,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"gopkg.in/gomail.v2"
 )
 
 var Con *Connection
+
+const (
+	fromemail string = "cogratulationservice@gmail.com"
+	subject   string = "Your Friend's Birthday Is Coming!"
+)
 
 type Connection struct {
 	DB *sql.DB
@@ -29,8 +32,8 @@ func (c *Connection) findTwoEmployees(id1, id2 int) (bool, error) {
 	return count > 0, err
 }
 
-func (c *Connection) updateNotificated() error {
-	_, err := c.DB.Exec("UPDATE Subscriptions SET notificated = TRUE WHERE subedid = $1 AND subtoid = $2")
+func (c *Connection) updateNotificated(subedid, subtoid int) error {
+	_, err := c.DB.Exec("UPDATE Subscriptions SET notificated = TRUE WHERE subedid = $1 AND subtoid = $2", subedid, subtoid)
 	return err
 }
 
@@ -38,10 +41,20 @@ func (c *Connection) FindWhoShouldBeNotified() map[*apptype.Employee][]*apptype.
 	var birthdayboys []*apptype.Employee
 	members := make(map[*apptype.Employee][]*apptype.Employee)
 	rows, err := c.DB.Query(`
-		SELECT e.id, e.name, e.nickname, e.birthday FROM Employees e
-		JOIN Subscriptions s ON s.subtoid = e.id
-		WHERE s.notificated = FALSE
-		ORDER BY e.id`)
+		SELECT e.id, e.name, e.nickname, e.birthday 
+		FROM Employees e
+		JOIN Subscriptions s 
+    	ON s.subtoid = e.id 
+		WHERE 
+    	(
+        	(EXTRACT(MONTH FROM CURRENT_DATE) = EXTRACT(MONTH FROM e.birthday) AND EXTRACT(DAY FROM e.birthday) >= EXTRACT(DAY FROM CURRENT_DATE))
+        	OR
+        	(EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day') = EXTRACT(MONTH FROM e.birthday) AND EXTRACT(DAY FROM e.birthday) <= EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '30 day'))
+        	OR
+        	(EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day') > EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(MONTH FROM e.birthday) BETWEEN EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day'))
+    	)
+    	AND s.notificated = FALSE
+		ORDER BY e.id;`)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() && err == nil {
@@ -75,62 +88,68 @@ func (c *Connection) FindWhoShouldBeNotified() map[*apptype.Employee][]*apptype.
 	return members
 }
 
-func sendALetter(notified *apptype.Notified) error {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("eu-north-1"),
-	})
-	if err == nil {
-		svc := ses.New(sess)
-		message := fmt.Sprintf("Hello, %s %s! You've subscribed to %s or maybe you know them as %s for a while, and it will be their Birthday soon! Their Birthday is going to be on %s. This is a message from the congratulations service, which can notify you to be prepared! Good luck!",
-			notified.NameSubed, notified.NicknameSubed, notified.NameBirth, notified.NicknameBirth, notified.Birthday)
-		err = sendEmail("mya487466@gmail.com", message, "Birthday Reminder!", []string{notified.Email}, svc)
-	}
-	return err
-}
+func sendGomail(to, body string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", fromemail)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", body)
 
-func sendEmail(from, body, subject string, to []string, svc *ses.SES) error {
-	msg := &ses.SendEmailInput{
-		Destination: &ses.Destination{
-			ToAddresses: aws.StringSlice(to),
-		},
-		Message: &ses.Message{
-			Body: &ses.Body{
-				Text: &ses.Content{
-					Charset: aws.String("UTF-8"),
-					Data:    aws.String(body),
-				},
-			},
-			Subject: &ses.Content{
-				Charset: aws.String("UTF-8"),
-				Data:    aws.String(subject),
-			},
-		},
-		Source: aws.String(from),
-	}
-
-	_, err := svc.SendEmail(msg)
+	d := gomail.NewDialer("smtp.gmail.com", 587, fromemail, "ycuw acml gnor qcir")
+	err := d.DialAndSend(m)
 	if err != nil {
 		log.Print(err)
 	}
 	return err
 }
 
-func prepareLetters(members map[*apptype.Employee][]*apptype.Employee) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("eu-north-1"),
-	})
+func sendALetter(notified *apptype.Notified) error {
+	var err error
+	birthday, err := time.Parse("2006-01-02", notified.Birthday)
 	if err == nil {
-		from := "mya487466@gmail.com"
-		subject := "Birthday Reminder!"
-		svc := ses.New(sess)
-		for key, value := range members {
-			for _, empl := range value {
-				message := fmt.Sprintf("Hello, %s %s! You've subscribed to %s or maybe you know them as %s for a while, and it will be their Birthday soon! Their Birthday is going to be on %s. This is a message from the congratulations service, which can notify you to be prepared! Good luck!",
-					empl.Name, empl.Nickname, key.Name, key.Nickname, key.Birthday)
-				sendEmail(from, message, subject, []string{empl.Email}, svc)
-			}
-
+		today := time.Now()
+		age := today.Year() - birthday.Year()
+		nextBirthday := time.Date(today.Year(), birthday.Month(), birthday.Day(), 0, 0, 0, 0, time.Local)
+		if today.After(nextBirthday) {
+			nextBirthday = time.Date(today.Year()+1, birthday.Month(), birthday.Day(), 0, 0, 0, 0, time.Local)
 		}
+		if today.YearDay() < birthday.YearDay() {
+			age--
+		}
+		duration := nextBirthday.Sub(today)
+		days := int(duration.Hours() / 24)
+		message := fmt.Sprintf(`<b>Hello, %s "%s"!</b>`, notified.NameSubed, notified.NicknameSubed) + "\n" +
+			fmt.Sprintf(`You've subscribed to <b>%s</b> for a while, and it will be their <b>Birthday</b> soon! His/Her age turns <b>%d</b>! Their were born in <b>%s</b> and you have only <b>%d</b> days before it'll come!`,
+				notified.NameBirth, age, notified.Birthday, days) + "\n" + "This is a message from the congratulations service, which can notify you to be prepared! Good luck!"
+		err = sendGomail(notified.Email, message)
+	}
+
+	return err
+}
+
+func prepareLetters(members map[*apptype.Employee][]*apptype.Employee) {
+	for key, value := range members {
+		for _, empl := range value {
+			birthday, err := time.Parse("2006-01-02", key.Birthday)
+			if err == nil {
+				today := time.Now()
+				age := today.Year() - birthday.Year()
+				nextBirthday := time.Date(today.Year(), birthday.Month(), birthday.Day(), 0, 0, 0, 0, time.Local)
+				if today.After(nextBirthday) {
+					nextBirthday = time.Date(today.Year()+1, birthday.Month(), birthday.Day(), 0, 0, 0, 0, time.Local)
+				}
+				if today.YearDay() < birthday.YearDay() {
+					age--
+				}
+				duration := nextBirthday.Sub(today)
+				days := int(duration.Hours() / 24)
+				message := fmt.Sprintf(`<b>Hello, %s "%s"!</b>`, empl.Name, empl.Nickname) + "\n" +
+					fmt.Sprintf(`You've subscribed to <b>%s</b> for a while, and it will be their <b>Birthday</b> soon! His/Her age turns <b>%d</b>! Their were born in <b>%s</b> and you have only <b>%d</b> days before it'll come!`,
+						key.Name, age, key.Birthday, days) + "\n" + "This is a message from the congratulations service, which can notify you to be prepared! Good luck!"
+				sendGomail(empl.Email, message)
+			}
+		}
+
 	}
 }
 
@@ -140,7 +159,10 @@ func Notify(notified *apptype.Notified) (string, error) {
 	if ok && err == nil {
 		err = sendALetter(notified)
 		if err == nil {
-			err = Con.updateNotificated()
+			err = Con.updateNotificated(notified.IdSubed, notified.IdBirth)
+			if err == nil {
+				answer = "The employee was notified"
+			}
 		}
 	}
 	return answer, err

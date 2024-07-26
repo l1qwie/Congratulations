@@ -1,6 +1,8 @@
 package tests
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 var Con *TestConnection
 
@@ -58,7 +60,7 @@ func (TC *TestConnection) Create8Employees() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (127, 'Misha', 'misha228', 'trashfly@ya.ru', '2010-09-10')")
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (127, 'Misha', 'misha228', 'trashfly@ya.ru', '2010-08-10')")
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +72,7 @@ func (TC *TestConnection) Create8Employees() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (130, 'Nastya', 'princes', 'letmefly@gmail.com', '1970-10-01')")
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (130, 'Nastya', 'princes', 'letmefly@gmail.com', '1970-08-11')")
 	if err != nil {
 		panic(err)
 	}
