@@ -37,24 +37,15 @@ func (c *Connection) updateNotificated(subedid, subtoid int) error {
 	return err
 }
 
-func (c *Connection) FindWhoShouldBeNotified() map[*apptype.Employee][]*apptype.Employee {
+func (c *Connection) FindWhoShouldBeNotified() map[apptype.Employee][]*apptype.Employee {
 	var birthdayboys []*apptype.Employee
-	members := make(map[*apptype.Employee][]*apptype.Employee)
+	members := make(map[apptype.Employee][]*apptype.Employee)
 	rows, err := c.DB.Query(`
-		SELECT e.id, e.name, e.nickname, e.birthday 
+		SELECT DISTINCT(e.id), e.name, e.nickname, TO_CHAR(e.birthday, 'YYYY-MM-DD') AS birthday 
 		FROM Employees e
-		JOIN Subscriptions s 
-    	ON s.subtoid = e.id 
-		WHERE 
-    	(
-        	(EXTRACT(MONTH FROM CURRENT_DATE) = EXTRACT(MONTH FROM e.birthday) AND EXTRACT(DAY FROM e.birthday) >= EXTRACT(DAY FROM CURRENT_DATE))
-        	OR
-        	(EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day') = EXTRACT(MONTH FROM e.birthday) AND EXTRACT(DAY FROM e.birthday) <= EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '30 day'))
-        	OR
-        	(EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day') > EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(MONTH FROM e.birthday) BETWEEN EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '30 day'))
-    	)
-    	AND s.notificated = FALSE
-		ORDER BY e.id;`)
+		JOIN Subscriptions s ON s.subtoid = e.id 
+		WHERE DATE_PART('doy', e.birthday) <= DATE_PART('doy', CURRENT_DATE + INTERVAL '30 days')
+		AND s.notificated = FALSE`)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() && err == nil {
@@ -81,7 +72,7 @@ func (c *Connection) FindWhoShouldBeNotified() map[*apptype.Employee][]*apptype.
 						congratulators = append(congratulators, employee)
 					}
 				}
-				members[birthdayboy] = congratulators
+				members[*birthdayboy] = congratulators
 			}
 		}
 	}
@@ -127,7 +118,7 @@ func sendALetter(notified *apptype.Notified) error {
 	return err
 }
 
-func prepareLetters(members map[*apptype.Employee][]*apptype.Employee) {
+func prepareLetters(members map[apptype.Employee][]*apptype.Employee) {
 	for key, value := range members {
 		for _, empl := range value {
 			birthday, err := time.Parse("2006-01-02", key.Birthday)

@@ -161,15 +161,12 @@ func prepareResponse(body []byte) []byte {
 // In case of an error, the response will be a JSON object of rest.Err. If there is an encryption error, a plain string will be returned.
 // @Accept json
 // @Produce string
-// @Param   whatdo      path    string  	false   "What app should do: new, update, delete, sub, unsub"
-// @Param   emplid	    path    string  	false   "The second Employee ID"
-// @Param 	Id 			query 	integer 	false 	"The first Employee ID"
-// @Param 	Name 		query 	string		false	"Employee's Name"
-// @Param	Nickname	query	string		false	"Employee's Nickname"
-// @Param 	Email		query	string		false	"Employee's Email"
-// @Param	Birthday	query	string		false	"Employee's Birthday"
-// @Success 200 {string}  string "The employee has been updated"
-// @Failure 400 {object} rest.Err
+// @Param   whatdo      path    string  			false   "What app should do: new, update, delete, sub, unsub"
+// @Param   emplid	    path    string  			false   "The second Employee ID"
+// @Param 	employee 	body 	apptype.Employee 	true 	"Employee details"
+// @Success 200 {string}  	string "The employee has been updated"
+// @Failure 400 {object} 	rest.Err
+// @Failure 400 {string} 	string "Something went wrong while we were trying to encrypt data to send"
 // @Router /congratulations/employees/{whatdo}/{emplid} [post]
 func UpdateEmployees(g *gin.Engine) {
 	g.POST("congratulations/employees/:whatdo/:emplid", func(ctx *gin.Context) {
@@ -223,7 +220,7 @@ func UpdateEmployees(g *gin.Engine) {
 // @Param   limit   path    string  false   "Limit"
 // @Success 200 {array}  apptype.Employee
 // @Failure 400 {object} rest.Err
-// @Failure 400 {string} string
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to send"
 // @Router /congratulations/employees/{id}/{limit} [get]
 func GetEmployees(g *gin.Engine) {
 	g.GET("congratulations/employees/:id/:limit", func(ctx *gin.Context) {

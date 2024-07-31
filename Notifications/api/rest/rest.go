@@ -114,6 +114,15 @@ func prepareResponse(body []byte) []byte {
 	return response
 }
 
+// @Summary This API can notify any person by sending email
+// @Description You must give all fields in structer and then the server can send email by using "gomail"
+// @Accept json
+// @Produce string
+// @Param	notified	body	apptype.Notified	true	"Details about the subscriber and about 'birthday-boy'"
+// @Success 200 {string}  string "The employee was notified"
+// @Failure 400 {object} rest.Err
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/notify [post]
 func Notify(router *gin.Engine) {
 	router.POST("/congratulations/notify", func(ctx *gin.Context) {
 		var (

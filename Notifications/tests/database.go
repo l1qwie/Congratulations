@@ -52,11 +52,11 @@ func (TC *TestConnection) checkNotifiedInDB(id1, id2 int) bool {
 }
 
 func (TC *TestConnection) Create8Employees() {
-	_, err := TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-02-20')")
+	_, err := TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-07-30')")
 	if err != nil {
 		panic(err)
 	}
-	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (126, 'Oleja', 'oleja_krut', 'example@gmail.com', '1980-09-20')")
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (126, 'Oleja', 'oleja_krut', 'example@gmail.com', '1980-08-20')")
 	if err != nil {
 		panic(err)
 	}
@@ -76,11 +76,11 @@ func (TC *TestConnection) Create8Employees() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (131, 'Fedor', 'fedor999', 'coolgirl@gmail.com', '1919-09-09')")
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (131, 'Fedor', 'fedor999', 'coolgirl@gmail.com', '1919-08-09')")
 	if err != nil {
 		panic(err)
 	}
-	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (132, 'Matvei', 'cool_juice', 'juice@gmail.com', '1980-10-03')")
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (132, 'Matvei', 'cool_juice', 'juice@gmail.com', '1980-08-03')")
 	if err != nil {
 		panic(err)
 	}
