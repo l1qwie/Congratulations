@@ -100,16 +100,43 @@ func handeWholeRequest(ctx *gin.Context, whatdo string) {
 	ctx.Data(statreq, "application/octet-stream", response)
 }
 
-func SubscribeServer(router *gin.Engine) {
+// @Summary This API can subscribe someone to someone.
+// @Description There's only one function - subscribe
+// @Accept path
+// @Produce string
+// @Param	SubscriberId	path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
+// @Param 	SubtoId			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
+// @Success 200 {string}  string "You've just subscribed to {id}"
+// @Failure 400 {object} rest.Err
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/subscriptions/sub/{subscriber}/{subto} [put]
+func sub(router *gin.Engine) {
 	router.PUT("congratulations/subscriptions/sub/:subscriber/:subto", func(ctx *gin.Context) {
 		log.Print("Someone has just called ongratulations/subscriptions/sub/:subscriber/:subto server")
 		handeWholeRequest(ctx, app.Sub)
 		log.Print("Server ongratulations/subscriptions/sub/:subscriber/:subto has just finished its job")
 	})
+}
 
+// @Summary This API can unsubscribe someone from someone.
+// @Description There's only one functions - unsubscribe
+// @Accept path
+// @Produce string
+// @Param	SubscriberId	path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
+// @Param 	SubtoId			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
+// @Success 200 {string}  string "You've just unsubscribed from {id}"
+// @Failure 400 {object} rest.Err
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/subscriptions/unsub/{subscriber}/{subto} [put]
+func unsub(router *gin.Engine) {
 	router.PUT("congratulations/subscriptions/unsub/:subscriber/:subto", func(ctx *gin.Context) {
 		log.Print("Someone has just called ongratulations/subscriptions/unsub/:subscriber/:subto server")
 		handeWholeRequest(ctx, app.Unsub)
 		log.Print("Server ongratulations/subscriptions/unsub/:subscriber/:subto has just finished its job")
 	})
+}
+
+func SubscribeServer(router *gin.Engine) {
+	sub(router)
+	unsub(router)
 }
