@@ -237,17 +237,22 @@ func GetEmployees(id, limit int) ([]*apptype.Employee, error) {
 // Мейн функция для post endPoint'a
 func UpdateEmployees(empl *apptype.Employee, whatdo, diffrentemplid string) (string, error) {
 	var (
-		answer string
-		err    error
+		answer, topic string
+		err           error
 	)
 	log.Print("Got into UpdateEmployees func in the bussines logic")
 	err = Client.updateEmployee(empl, whatdo, diffrentemplid)
 	if err == nil {
 		log.Print("Has successfuly updated redis")
 		answer = "The employee has been updated"
+		if whatdo == "sub" || whatdo == "unsub" {
+			topic = producer.TopicSub
+		} else {
+			topic = producer.TopicOthers
+		}
 		// Не важно, были ли данные в diffrentemplid так как в противном случае - просто будет передан дефолт значение int
 		id, _ := strconv.Atoi(diffrentemplid)
-		producer.TellChanges(empl, whatdo, id)
+		producer.TellChanges(empl, whatdo, id, topic)
 	}
 	log.Print("Got out of UpdateEmployees func in the bussines logic")
 	return answer, err

@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	add      string = "new"
-	update   string = "update"
-	delete   string = "delete"
-	sub      string = "sub"
-	unsub    string = "unsub"
-	Employee int32  = 0
+	add    string = "new"
+	update string = "update"
+	delete string = "delete"
+	sub    string = "sub"
+	unsub  string = "unsub"
+	topic  string = "employee-redis"
 )
 
 func whichWay(kafkaemployee *apptype.KafkaEmployee) {
@@ -43,7 +43,7 @@ func whichWay(kafkaemployee *apptype.KafkaEmployee) {
 	}
 }
 
-func reader(top string, partcons sarama.PartitionConsumer) {
+func reader(partcons sarama.PartitionConsumer) {
 	kafkaemployee := new(apptype.KafkaEmployee)
 	for {
 		select {
@@ -54,13 +54,12 @@ func reader(top string, partcons sarama.PartitionConsumer) {
 			}
 			whichWay(kafkaemployee)
 		case err := <-partcons.Errors():
-			log.Printf("Error while consuming (topic: %s): %s", top, err)
+			log.Printf("Error while consuming (topic: %s): %s", topic, err)
 		}
 	}
 }
 
 func Consumer() {
-	topic := "employee"
 	consumerConfig := sarama.NewConfig()
 	consumerConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 	brokers := []string{"congratulations-kafka:9092"}
@@ -70,9 +69,9 @@ func Consumer() {
 	}
 	defer consumer.Close()
 
-	partitionConsumer, err := consumer.ConsumePartition(topic, Employee, sarama.OffsetNewest)
+	partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start consumer partition add: %s", err))
 	}
-	reader(topic, partitionConsumer)
+	reader(partitionConsumer)
 }

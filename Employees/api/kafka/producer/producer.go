@@ -10,12 +10,10 @@ import (
 )
 
 const (
-	maxRetries    int           = 5
-	retryBackoff  time.Duration = 2 * time.Second
-	Employee      int32         = 0
-	Authorization int32         = 1
-	Notifications int32         = 2
-	Subscribe     int32         = 3
+	maxRetries   int           = 5
+	retryBackoff time.Duration = 2 * time.Second
+	TopicSub     string        = "employee-sub"
+	TopicOthers  string        = "employee-other"
 )
 
 func send(jd []byte, topic string, producer sarama.AsyncProducer, partition int32) {
@@ -46,8 +44,7 @@ func send(jd []byte, topic string, producer sarama.AsyncProducer, partition int3
 	}
 }
 
-func TellChanges(employee *apptype.Employee, whatdo string, secondid int) {
-	topic := "employee"
+func TellChanges(employee *apptype.Employee, whatdo string, secondid int, topic string) {
 	producerConfig := sarama.NewConfig()
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
 	producerConfig.Producer.Retry.Max = 5
@@ -79,8 +76,5 @@ func TellChanges(employee *apptype.Employee, whatdo string, secondid int) {
 		return
 	}
 
-	send(jb, topic, producer, Employee)
-	//go send(jb, topic, producer, Authorization)
-	//go (jb, topic, producer, Notifications)
-	//go (jb, topic, producer, Subscribe)
+	send(jb, topic, producer, 0)
 }

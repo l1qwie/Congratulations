@@ -1,3 +1,7 @@
 #!/bin/bash
 
-kafka-topics.sh --create --topic employee --partitions 2 --replication-factor 1 --if-not-exists --bootstrap-server localhost:9092
+BROKER="congratulations-kafka:9092"
+
+kafka-topics.sh --create --bootstrap-server $BROKER --replication-factor 1 --partitions 1 --topic employee-redis
+kafka-topics.sh --create --bootstrap-server $BROKER --replication-factor 1 --partitions 1 --topic employee-sub
+kafka-topics.sh --create --bootstrap-server $BROKER --replication-factor 1 --partitions 1 --topic employee-other

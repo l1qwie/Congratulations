@@ -33,27 +33,20 @@ func (c *Connection) endTransaction(err error) {
 	log.Print("endTransaction has just ended its job")
 }
 
-func (c *Connection) AddEmployee(employee *apptype.KafkaEmployee) error {
+func (c *Connection) queryAdd(employee *apptype.KafkaEmployee) error {
 	var counter int
-	log.Printf("Get into AddEmployee() with param employee: %v", employee)
-	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
-
+	err := c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&counter)
 	if err == nil {
-		err = c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&counter)
+		if counter+1 != employee.Id {
+			_, err = c.DB.Exec("INSERT INTO DONOTUSE (employeeid) VALUES ($1)", employee.Id)
 
-		if err == nil {
-			if counter+1 != employee.Id {
-				_, err = c.DB.Exec("INSERT INTO DONOTUSE (employeeid) VALUES ($1)", employee.Id)
-
-				if err == nil {
-					if counter > 2 {
-						err = c.DB.QueryRow("SELECT setval('employeeId', currval('employeeId') - 1)").Scan(nil)
-					}
+			if err == nil {
+				if counter > 2 {
+					err = c.DB.QueryRow("SELECT setval('employeeId', currval('employeeId') - 1)").Scan(nil)
 				}
 			}
 		}
 	}
-
 	if err == nil {
 		_, err = c.DB.Exec("INSERT INTO Auth (id, nickname) VALUES ($1, $2)", employee.Id, employee.Nickname)
 
@@ -63,7 +56,25 @@ func (c *Connection) AddEmployee(employee *apptype.KafkaEmployee) error {
 				VALUES ($1, $2, $3, $4, $5)`, employee.Id, employee.Name, employee.Nickname, employee.Email, employee.Birthday)
 		}
 	}
+	return err
+}
+func (c *Connection) queryDelete(id int) error {
+	_, err := c.DB.Exec("DELETE FROM Subscriptions WHERE (subedid = $1) OR (subtoid = $1)", id)
+	if err == nil {
+		_, err = c.DB.Exec("DELETE FROM Employees WHERE id = $1", id)
+		if err == nil {
+			_, err = c.DB.Exec("DELETE FROM Auth WHERE id = $1", id)
+		}
+	}
+	return err
+}
 
+func (c *Connection) AddEmployee(employee *apptype.KafkaEmployee) error {
+	log.Printf("Get into AddEmployee() with param employee: %v", employee)
+	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
+	if err == nil {
+		err = c.queryAdd(employee)
+	}
 	c.endTransaction(err)
 	log.Print("Get out from AddEmployee")
 	return err
@@ -73,10 +84,10 @@ func (c *Connection) UpdateEmployee(employee *apptype.KafkaEmployee) error {
 	log.Printf("Got into UpdateEmployee() with param employee: %v", employee)
 	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
 	if err == nil {
-		err = c.DeleteEmployee(employee.SecondId)
+		err = c.queryDelete(employee.SecondId)
 	}
 	if err == nil {
-		err = c.AddEmployee(employee)
+		err = c.queryAdd(employee)
 	}
 	c.endTransaction(err)
 	log.Print("Got out of UpdateEmployee()")
@@ -87,13 +98,7 @@ func (c *Connection) DeleteEmployee(id int) error {
 	log.Printf("Got into DeleteEmployee() with param id: %d", id)
 	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
 	if err == nil {
-		_, err = c.DB.Exec("DELETE FROM Subscriptions WHERE (subedid = $1) OR (subtoid = $1)", id)
-		if err == nil {
-			_, err = c.DB.Exec("DELETE FROM Employees WHERE id = $1", id)
-			if err == nil {
-				_, err = c.DB.Exec("DELETE FROM Auth WHERE id = $1", id)
-			}
-		}
+		err = c.queryDelete(id)
 	}
 	c.endTransaction(err)
 	log.Print("Got out of DeleteEmployee()")
@@ -125,7 +130,7 @@ func (c *Connection) savedNewEmployee(auth *apptype.Auth, ip string) (int, error
 		for keepon {
 			err = c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&id)
 			if err == nil {
-				err = c.DB.QueryRow("SELECT COUNT(*) FROM DONOTUSE WHERE employeeid = $1", id).Scan(counter)
+				err = c.DB.QueryRow("SELECT COUNT(*) FROM DONOTUSE WHERE employeeid = $1", id).Scan(&counter)
 				if err == nil {
 					if counter == 0 {
 						keepon = false

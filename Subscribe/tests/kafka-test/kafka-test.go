@@ -1,7 +1,8 @@
-package producer
+package kafkatest
 
 import (
-	"Authorization/apptype"
+	"Subscribe/apptype"
+	resttest "Subscribe/tests/rest-test"
 	"encoding/json"
 	"log"
 	"time"
@@ -12,7 +13,7 @@ import (
 const (
 	maxRetries   int           = 5
 	retryBackoff time.Duration = 2 * time.Second
-	topic        string        = "employee-redis"
+	topic        string        = "employee-sub"
 )
 
 func send(jd []byte, producer sarama.AsyncProducer, partition int32) {
@@ -43,7 +44,8 @@ func send(jd []byte, producer sarama.AsyncProducer, partition int32) {
 	}
 }
 
-func TellChanges(kafkaemployee *apptype.KafkaEmployee) {
+func producer(subscriber, subtoid int, whatdo string) {
+	log.Printf("Got into producer() with params subscriber: %d, subtoid: %d, whatdo: %s", subscriber, subtoid, whatdo)
 	producerConfig := sarama.NewConfig()
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
 	producerConfig.Producer.Retry.Max = 5
@@ -58,12 +60,55 @@ func TellChanges(kafkaemployee *apptype.KafkaEmployee) {
 		return
 	}
 	defer producer.Close()
-
+	kafkaemployee := &apptype.KafkaEmployee{
+		Id:       subscriber,
+		SecondId: subtoid,
+		WhatDo:   whatdo,
+	}
 	jb, err := json.Marshal(kafkaemployee)
 	if err != nil {
 		log.Printf("KAFKA ERROR TellChanges(): %s", err)
 		return
 	}
-
 	send(jb, producer, 0)
+	log.Print("Got out of producer()")
+}
+
+func testSub() {
+	log.Print("Test testSub() has started")
+	defer resttest.Con.ResetSequence()
+	defer resttest.Con.DeleteEmployees()
+	defer resttest.Con.DeleteSubscribers()
+
+	resttest.Con.CreateEmployee()
+
+	producer(1, 2, "sub")
+	time.Sleep(time.Second * 2)
+	if !resttest.Con.CheckSubedEmployees(1, 2) {
+		panic("The employee wasn't subscribed to another")
+	}
+	log.Print("Test testSub() has finished")
+}
+
+func testUnsub() {
+	log.Print("Test testUnsub() has started")
+	defer resttest.Con.ResetSequence()
+	defer resttest.Con.DeleteEmployees()
+	defer resttest.Con.DeleteSubscribers()
+
+	resttest.Con.CreateEmployee()
+	resttest.Con.SubscribeEmployeeToEmployee()
+
+	producer(1, 2, "unsub")
+	time.Sleep(time.Second * 2)
+	if resttest.Con.CheckSubedEmployees(1, 2) {
+		panic("The employee wasn't unsubscribed to another")
+	}
+	log.Print("Test testUnsub() has finished")
+}
+
+func StartSubKafkaTest() {
+	time.Sleep(time.Second * 5)
+	testSub()
+	testUnsub()
 }

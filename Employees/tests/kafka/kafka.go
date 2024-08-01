@@ -1,12 +1,84 @@
 package kafka
 
 import (
-	"Employees/api/kafka/producer"
+	//"Employees/api/kafka/producer"
 	"Employees/apptype"
 	"Employees/tests/redis"
+	"encoding/json"
 	"log"
 	"time"
+
+	"github.com/IBM/sarama"
 )
+
+const (
+	maxRetries   int           = 5
+	retryBackoff time.Duration = 2 * time.Second
+	TestTopic    string        = "employee-redis"
+)
+
+func send(jd []byte, producer sarama.AsyncProducer, partition int32) {
+	msg := &sarama.ProducerMessage{
+		Topic:     TestTopic,
+		Value:     sarama.ByteEncoder(jd),
+		Partition: partition,
+	}
+	continuworking := true
+	attempt := 0
+	for continuworking {
+		producer.Input() <- msg
+
+		select {
+		case <-producer.Successes():
+			log.Print("Message has been successfully sent")
+			continuworking = false
+		case err := <-producer.Errors():
+			log.Printf("Failed to send message: %s", err)
+			attempt++
+			if attempt >= maxRetries {
+				log.Printf("Max retries reached. Giving up on sending message.")
+				continuworking = false
+			}
+			log.Printf("Retrying in %v...", retryBackoff)
+			time.Sleep(retryBackoff)
+		}
+	}
+}
+
+func producer(employee *apptype.Employee, whatdo string, secondid int) {
+	producerConfig := sarama.NewConfig()
+	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
+	producerConfig.Producer.Retry.Max = 5
+	producerConfig.Producer.Retry.Backoff = 100 * time.Millisecond
+	producerConfig.Producer.Return.Successes = true
+	producerConfig.Producer.Timeout = 10 * time.Second
+	brokers := []string{"congratulations-kafka:9092"}
+
+	producer, err := sarama.NewAsyncProducer(brokers, producerConfig)
+	if err != nil {
+		log.Printf("Failed to start producer: %s", err)
+		return
+	}
+	defer producer.Close()
+
+	kafkaemployee := &apptype.KafkaEmployee{
+		Id:       employee.Id,
+		Name:     employee.Name,
+		Nickname: employee.Nickname,
+		Email:    employee.Email,
+		Birthday: employee.Birthday,
+		WhatDo:   whatdo,
+		SecondId: secondid,
+	}
+
+	jb, err := json.Marshal(kafkaemployee)
+	if err != nil {
+		log.Printf("KAFKA ERROR TellChanges(): %s", err)
+		return
+	}
+
+	send(jb, producer, 0)
+}
 
 func testNew(TRCL *redis.TestRedClient) {
 	log.Print("testNew has been started")
@@ -17,7 +89,7 @@ func testNew(TRCL *redis.TestRedClient) {
 		Email:    "zick@gmail.com",
 		Birthday: "2000-02-20",
 	}
-	producer.TellChanges(employee, "new", 0)
+	producer(employee, "new", 0)
 	time.Sleep(time.Second / 10)
 	if !TRCL.CheckUpdatedOrNewEmployee(employee, false, "") {
 		panic("The new employee wasn't added")
@@ -34,7 +106,7 @@ func testUpdate(TRCL *redis.TestRedClient) {
 		Email:    "zick@gmail.com",
 		Birthday: "2000-02-20",
 	}
-	producer.TellChanges(employee, "update", 111)
+	producer(employee, "update", 111)
 	time.Sleep(time.Second / 10)
 	if !TRCL.CheckUpdatedOrNewEmployee(employee, true, "111") {
 		panic("The employee wasn't updated")
@@ -51,7 +123,7 @@ func testDelete(TRCL *redis.TestRedClient) {
 		Email:    "zick@gmail.com",
 		Birthday: "2000-02-20",
 	}
-	producer.TellChanges(employee, "delete", 0)
+	producer(employee, "delete", 0)
 	time.Sleep(time.Second / 10)
 	if TRCL.CheckDeletedEmployee("111") {
 		panic("The employee wasn't deleted")
@@ -68,7 +140,7 @@ func testSub(TRCL *redis.TestRedClient) {
 		Email:    "zick@gmail.com",
 		Birthday: "2000-02-20",
 	}
-	producer.TellChanges(employee, "sub", 199)
+	producer(employee, "sub", 199)
 	time.Sleep(time.Second / 10)
 	if !TRCL.CheckSubToEmployee(employee.Id, 199) {
 		panic("The employee wasn't subed to another employee")
@@ -85,7 +157,7 @@ func testUnsub(TRCL *redis.TestRedClient) {
 		Email:    "zick@gmail.com",
 		Birthday: "2000-02-20",
 	}
-	producer.TellChanges(employee, "unsub", 111)
+	producer(employee, "unsub", 111)
 	time.Sleep(time.Second / 10)
 	if TRCL.CheckSubToEmployee(employee.Id, 111) {
 		panic("The employee wasn't unsubed to another employee")

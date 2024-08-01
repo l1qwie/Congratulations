@@ -155,6 +155,15 @@ func prepareResponse(body []byte) []byte {
 	return response
 }
 
+// @Summary Log In
+// @Description If you want to log in you must send your nickname and password
+// @Accept json
+// @Produce string
+// @Param	auth	body	apptype.Auth	true	"Details for logging in"
+// @Success 200 {string}  string "You have been authrizated"
+// @Failure 400 {object} rest.Error
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/authorization/login" [post]
 func AuthLogIn(router *gin.Engine) {
 	router.POST("congratulations/authorization/login", func(ctx *gin.Context) {
 		log.Print("Someone has just called the server congratulations/authorization/login")
@@ -193,6 +202,16 @@ func AuthLogIn(router *gin.Engine) {
 	})
 }
 
+// @Summary Sign up
+// @Description If you want to sign up you must send your nickname and password and it will put this information to the database.
+// The endpoint will return you a json-object of your information
+// @Accept json
+// @Produce json
+// @Param	notified	body	apptype.Auth	true	"Details for signing up"
+// @Success 200 {object} apptype.SignIn
+// @Failure 400 {object} rest.Error
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/authorization/signin [post]
 func AuthSignIn(router *gin.Engine) {
 	router.POST("congratulations/authorization/signin", func(ctx *gin.Context) {
 		log.Print("Someone has just called the server congratulations/authorization/signin")
@@ -235,6 +254,15 @@ func AuthSignIn(router *gin.Engine) {
 	})
 }
 
+// @Summary Delete data about you
+// @Description If you want to delete all data about you in the database you should call this endpoint.
+// @Accept json
+// @Produce string
+// @Param	delete		body		apptype.Delete		true	"Details for deleting"
+// @Success 200 {string} string "Employee has been deleted"
+// @Failure 400 {object} rest.Error
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/authorization/delete [delete]
 func AuthDelete(router *gin.Engine) {
 	router.DELETE("congratulations/authorization/delete", func(ctx *gin.Context) {
 		log.Print("Someone has just called the server congratulations/authorization/delete")
@@ -273,6 +301,16 @@ func AuthDelete(router *gin.Engine) {
 	})
 }
 
+// @Summary Change data about you
+// @Description If you want to change some data about you in the database, you should call this endpoint.
+// You can change only you nickname or password.
+// @Accept json
+// @Produce string
+// @Param	change		body		apptype.Change		true	"Details for changing"
+// @Success 200 {string} string "Employee has been deleted"
+// @Failure 400 {object} rest.Error
+// @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
+// @Router /congratulations/authorization/delete [delete]
 func AuthChange(router *gin.Engine) {
 	router.PUT("congratulations/authorization/change", func(ctx *gin.Context) {
 		log.Print("Someone has just called the server congratulations/authorization/change")

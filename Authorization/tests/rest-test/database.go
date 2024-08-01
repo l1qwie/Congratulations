@@ -116,7 +116,7 @@ func (c *TestConnection) CheckDeletedEmployeeKafka(empl *apptype.KafkaEmployee) 
 	if err != nil {
 		panic(err)
 	}
-	return !auth, !employess, count == 0
+	return auth, employess, count == 0
 }
 
 func (c *TestConnection) DeleteDONOTUSE() {

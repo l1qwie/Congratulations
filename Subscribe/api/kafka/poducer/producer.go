@@ -1,7 +1,7 @@
 package producer
 
 import (
-	"Authorization/apptype"
+	"Subscribe/apptype"
 	"encoding/json"
 	"log"
 	"time"
@@ -43,7 +43,8 @@ func send(jd []byte, producer sarama.AsyncProducer, partition int32) {
 	}
 }
 
-func TellChanges(kafkaemployee *apptype.KafkaEmployee) {
+func TellChanges(subscriber, subtoid int, whatdo string) {
+	log.Printf("Got into producer.TellChanges() with params subscriber: %d, subtoid: %d, whatdo: %s", subscriber, subtoid, whatdo)
 	producerConfig := sarama.NewConfig()
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
 	producerConfig.Producer.Retry.Max = 5
@@ -58,12 +59,16 @@ func TellChanges(kafkaemployee *apptype.KafkaEmployee) {
 		return
 	}
 	defer producer.Close()
-
+	kafkaemployee := &apptype.KafkaEmployee{
+		Id:       subscriber,
+		SecondId: subtoid,
+		WhatDo:   whatdo,
+	}
 	jb, err := json.Marshal(kafkaemployee)
 	if err != nil {
 		log.Printf("KAFKA ERROR TellChanges(): %s", err)
 		return
 	}
-
 	send(jb, producer, 0)
+	log.Print("Got out of producer.TellChanges()")
 }

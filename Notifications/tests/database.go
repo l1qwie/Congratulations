@@ -11,7 +11,15 @@ type TestConnection struct {
 }
 
 func (TC *TestConnection) CreateEmployees() {
-	_, err := TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-02-20')")
+	_, err := TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (125, 'l1qwie')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (126, 'oleja_krut')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-02-20')")
 	if err != nil {
 		panic(err)
 	}
@@ -30,6 +38,10 @@ func (TC *TestConnection) SubscribeToEmployee() {
 
 func (TC *TestConnection) DeleteEmployees() {
 	_, err := TC.DB.Exec("DELETE FROM Employees")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("DELETE FROM Auth")
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +64,39 @@ func (TC *TestConnection) checkNotifiedInDB(id1, id2 int) bool {
 }
 
 func (TC *TestConnection) Create8Employees() {
-	_, err := TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-07-30')")
+	_, err := TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (125, 'l1qwie')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (126, 'oleja_krut')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (127, 'misha228')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (128, 'krasotka_katusha')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (129, 'alexsei')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (130, 'princes')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (131, 'fedor999')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Auth (id, nickname) VALUES (132, 'cool_juice')")
+	if err != nil {
+		panic(err)
+	}
+	_, err = TC.DB.Exec("INSERT INTO Employees (id, name, nickname, email, birthday) VALUES (125, 'Bogdan', 'l1qwie', 'trashemailbyfly@gmail.com', '2003-07-30')")
 	if err != nil {
 		panic(err)
 	}

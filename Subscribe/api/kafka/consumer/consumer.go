@@ -1,8 +1,8 @@
 package consumer
 
 import (
-	"Authorization/app"
-	"Authorization/apptype"
+	"Subscribe/app"
+	"Subscribe/apptype"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,29 +11,30 @@ import (
 )
 
 const (
-	add    string = "new"
-	update string = "update"
-	delete string = "delete"
-	sub    string = "sub"
-	unsub  string = "unsub"
-	topic  string = "employee-other"
+	subb  string = "sub"
+	unsub string = "unsub"
+	topic string = "employee-sub"
 )
 
 func whichWay(kafkaemployee *apptype.KafkaEmployee) {
 	log.Printf("Got into whichWay() with param kafkaemployee: %v", kafkaemployee)
-	var err error
-	con := new(app.Connection)
-	con.DB, err = apptype.ConnectToDatabase()
-	if err == nil {
-		log.Print("The app has successfuly connected to the database")
-		defer con.DB.Close()
-		log.Printf("kafkaemployee.WhatDo = %s", kafkaemployee.WhatDo)
-		if kafkaemployee.WhatDo == add {
-			err = con.AddEmployee(kafkaemployee)
-		} else if kafkaemployee.WhatDo == update {
-			err = con.UpdateEmployee(kafkaemployee)
-		} else if kafkaemployee.WhatDo == delete {
-			err = con.DeleteEmployee(kafkaemployee.Id)
+	var (
+		err                          error
+		ok, employee1ok, employee2ok bool
+	)
+	log.Printf("kafkaemployee.WhatDo = %s", kafkaemployee.WhatDo)
+	employee1ok, err = app.Con.FindEmploee(kafkaemployee.Id)
+	if employee1ok {
+		employee2ok, err = app.Con.FindEmploee(kafkaemployee.SecondId)
+		if employee2ok {
+			ok, err = app.Con.CheckSubStatus(kafkaemployee.Id, kafkaemployee.SecondId)
+			if ok && kafkaemployee.WhatDo == subb && err == nil {
+				log.Print("STRAT SUBSCRIBING")
+				err = app.Con.SubEmployeeToEmployee(kafkaemployee.Id, kafkaemployee.SecondId)
+			} else if !ok && kafkaemployee.WhatDo == unsub && err == nil {
+				log.Print("START UNSUBSCRIBING")
+				err = app.Con.UnsubEmployeeFromEmployee(kafkaemployee.Id, kafkaemployee.SecondId)
+			}
 		}
 	}
 	if err != nil {
@@ -57,6 +58,7 @@ func reader(partcons sarama.PartitionConsumer) {
 		case err := <-partcons.Errors():
 			log.Printf("Error while consuming (topic: %s): %s", topic, err)
 		}
+
 	}
 }
 

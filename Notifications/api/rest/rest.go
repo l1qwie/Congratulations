@@ -125,6 +125,7 @@ func prepareResponse(body []byte) []byte {
 // @Router /congratulations/notify [post]
 func Notify(router *gin.Engine) {
 	router.POST("/congratulations/notify", func(ctx *gin.Context) {
+		log.Print("Someone has just called /congratulations/notify server ")
 		var (
 			statreq    int
 			bodyanswer []byte
@@ -156,6 +157,6 @@ func Notify(router *gin.Engine) {
 
 		response := prepareResponse(bodyanswer)
 		ctx.Data(statreq, "application/octet-stream", response)
-		log.Print("Server congratulations/employees/:whatdo/:emplid has just finished its job")
+		log.Print("Server /congratulations/notify has just finished its job")
 	})
 }

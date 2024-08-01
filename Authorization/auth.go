@@ -62,8 +62,8 @@ func main() {
 	prepareEnv()
 	prepareTestEnv()
 
-	// go startAuthServer()
-	//resttest.StartAuthTest()
+	go startAuthServer()
+	resttest.StartAuthTest()
 
 	go consumer.Consumer()
 	kafkatest.StartTestConsumer()
