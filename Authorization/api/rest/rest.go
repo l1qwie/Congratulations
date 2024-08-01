@@ -207,7 +207,7 @@ func AuthSignIn(router *gin.Engine) {
 		statreq, err = handleRequestLogSign(ctx.Request.Body, auth, respError)
 		if err == nil {
 			log.Print("Everything was ok. Started the business logic")
-			signin, err = app.SignIn(auth, ctx.ClientIP())
+			signin, err = app.SignUp(auth, ctx.ClientIP())
 			if err != nil {
 				statreq = http.StatusBadRequest
 				log.Printf("Something went wrong during the business logic: %s", err)

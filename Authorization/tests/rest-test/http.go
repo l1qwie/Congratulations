@@ -227,10 +227,10 @@ func putAuthChange(body []byte) string {
 }
 
 func testLogIn() {
-	defer Con.resetSequence()
-	defer Con.deleteEmployees()
+	defer Con.ResetSequence()
+	defer Con.DeleteEmployees()
 
-	Con.createEmployee()
+	Con.CreateEmployee()
 
 	log.Print("Test testLogIn() has been started")
 	auth := &apptype.Auth{
@@ -252,10 +252,10 @@ func testLogIn() {
 }
 
 func testSingIn() {
-	defer Con.resetSequence()
-	defer Con.deleteEmployees()
+	defer Con.ResetSequence()
+	defer Con.DeleteEmployees()
 
-	Con.createEmployee()
+	Con.CreateEmployee()
 
 	log.Print("Test testSignIn has been starterd")
 	auth := &apptype.Auth{
@@ -287,10 +287,10 @@ func testSingIn() {
 }
 
 func testDelete() {
-	defer Con.resetSequence()
-	defer Con.deleteEmployees()
+	defer Con.ResetSequence()
+	defer Con.DeleteEmployees()
 
-	Con.createEmployee()
+	Con.CreateEmployee()
 
 	log.Print("Test testDelete has been started")
 	del := &apptype.Delete{
@@ -313,10 +313,10 @@ func testDelete() {
 }
 
 func changeNickname() {
-	defer Con.resetSequence()
-	defer Con.deleteEmployees()
+	defer Con.ResetSequence()
+	defer Con.DeleteEmployees()
 
-	Con.createEmployee()
+	Con.CreateEmployee()
 
 	log.Print("Test changeNickname has started")
 	change := &apptype.Change{
@@ -341,10 +341,10 @@ func changeNickname() {
 }
 
 func changePassword() {
-	defer Con.resetSequence()
-	defer Con.deleteEmployees()
+	defer Con.ResetSequence()
+	defer Con.DeleteEmployees()
 
-	Con.createEmployee()
+	Con.CreateEmployee()
 
 	log.Print("Test changePassword has started")
 	change := &apptype.Change{
@@ -375,17 +375,12 @@ func testChange() {
 }
 
 func StartAuthTest() {
-	var err error
 	log.Print("Test StartAuthTest has beed started")
-	Con = new(TestConnection)
-	Con.DB, err = apptype.ConnectToDatabase()
-	if err != nil {
-		panic(err)
-	}
 
 	testLogIn()
 	testSingIn()
 	testDelete()
 	testChange()
+
 	log.Print("Test StartAuthTest has been finished")
 }

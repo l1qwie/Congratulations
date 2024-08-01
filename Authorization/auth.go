@@ -1,9 +1,11 @@
 package main
 
 import (
+	"Authorization/api/kafka/consumer"
 	"Authorization/api/rest"
 	"Authorization/app"
 	"Authorization/apptype"
+	kafkatest "Authorization/tests/kafka-test"
 	resttest "Authorization/tests/rest-test"
 	"fmt"
 	"log"
@@ -47,9 +49,22 @@ func prepareEnv() {
 	}
 }
 
+func prepareTestEnv() {
+	var err error
+	resttest.Con = new(resttest.TestConnection)
+	resttest.Con.DB, err = apptype.ConnectToDatabase()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	prepareEnv()
+	prepareTestEnv()
 
-	go startAuthServer()
-	resttest.StartAuthTest()
+	// go startAuthServer()
+	//resttest.StartAuthTest()
+
+	go consumer.Consumer()
+	kafkatest.StartTestConsumer()
 }

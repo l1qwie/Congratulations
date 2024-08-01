@@ -18,6 +18,88 @@ type Connection struct {
 	DB *sql.DB
 }
 
+func (c *Connection) endTransaction(err error) {
+	log.Print("Someone has just called endTransaction() with param err: ", err)
+	var transactionresult string
+	if err != nil {
+		transactionresult = "ROLLBACK"
+	} else {
+		transactionresult = "COMMIT"
+	}
+	_, err = c.DB.Exec(transactionresult)
+	if err != nil {
+		log.Print(err)
+	}
+	log.Print("endTransaction has just ended its job")
+}
+
+func (c *Connection) AddEmployee(employee *apptype.KafkaEmployee) error {
+	var counter int
+	log.Printf("Get into AddEmployee() with param employee: %v", employee)
+	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
+
+	if err == nil {
+		err = c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&counter)
+
+		if err == nil {
+			if counter+1 != employee.Id {
+				_, err = c.DB.Exec("INSERT INTO DONOTUSE (employeeid) VALUES ($1)", employee.Id)
+
+				if err == nil {
+					if counter > 2 {
+						err = c.DB.QueryRow("SELECT setval('employeeId', currval('employeeId') - 1)").Scan(nil)
+					}
+				}
+			}
+		}
+	}
+
+	if err == nil {
+		_, err = c.DB.Exec("INSERT INTO Auth (id, nickname) VALUES ($1, $2)", employee.Id, employee.Nickname)
+
+		if err == nil {
+			_, err = c.DB.Exec(`
+				INSERT INTO Employees (id, name, nickname, email, birthday)
+				VALUES ($1, $2, $3, $4, $5)`, employee.Id, employee.Name, employee.Nickname, employee.Email, employee.Birthday)
+		}
+	}
+
+	c.endTransaction(err)
+	log.Print("Get out from AddEmployee")
+	return err
+}
+
+func (c *Connection) UpdateEmployee(employee *apptype.KafkaEmployee) error {
+	log.Printf("Got into UpdateEmployee() with param employee: %v", employee)
+	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
+	if err == nil {
+		err = c.DeleteEmployee(employee.SecondId)
+	}
+	if err == nil {
+		err = c.AddEmployee(employee)
+	}
+	c.endTransaction(err)
+	log.Print("Got out of UpdateEmployee()")
+	return err
+}
+
+func (c *Connection) DeleteEmployee(id int) error {
+	log.Printf("Got into DeleteEmployee() with param id: %d", id)
+	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
+	if err == nil {
+		_, err = c.DB.Exec("DELETE FROM Subscriptions WHERE (subedid = $1) OR (subtoid = $1)", id)
+		if err == nil {
+			_, err = c.DB.Exec("DELETE FROM Employees WHERE id = $1", id)
+			if err == nil {
+				_, err = c.DB.Exec("DELETE FROM Auth WHERE id = $1", id)
+			}
+		}
+	}
+	c.endTransaction(err)
+	log.Print("Got out of DeleteEmployee()")
+	return err
+}
+
 func (c *Connection) findNickname(a *apptype.Auth) (bool, error) {
 	var count int
 	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE nickname = $1 AND password = $2", a.Nickname, a.Password).Scan(&count)
@@ -36,23 +118,26 @@ func (c *Connection) checkNickname(nickname string) (bool, error) {
 }
 
 func (c *Connection) savedNewEmployee(auth *apptype.Auth, ip string) (int, error) {
-	var (
-		id                int
-		transactionresult string
-	)
+	var id, counter int
+	keepon := true
 	_, err := c.DB.Exec("BEGIN ISOLATION LEVEL REPEATABLE READ")
 	if err == nil {
-		err = c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&id)
+		for keepon {
+			err = c.DB.QueryRow("SELECT nextval('employeeId')").Scan(&id)
+			if err == nil {
+				err = c.DB.QueryRow("SELECT COUNT(*) FROM DONOTUSE WHERE employeeid = $1", id).Scan(counter)
+				if err == nil {
+					if counter == 0 {
+						keepon = false
+					}
+				}
+			}
+		}
 		if err == nil {
 			_, err = c.DB.Exec("INSERT INTO Auth (id, nickname, password, ip, loggedin) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)", id, auth.Nickname, auth.Password, ip)
 		}
 	}
-	if err != nil {
-		transactionresult = "ROLLBACK"
-	} else {
-		transactionresult = "COMMIT"
-	}
-	_, err = c.DB.Exec(transactionresult)
+	c.endTransaction(err)
 	return id, err
 }
 
@@ -100,7 +185,7 @@ func LogIn(auth *apptype.Auth, clientip string) (string, error) {
 	return answer, err
 }
 
-func SignIn(auth *apptype.Auth, clientip string) (*apptype.SignIn, error) {
+func SignUp(auth *apptype.Auth, clientip string) (*apptype.SignIn, error) {
 	var id int
 	log.Printf("Enter to SignIn() with data:\n	-auth: %v, clientip: %s", auth, clientip)
 	signin := new(apptype.SignIn)

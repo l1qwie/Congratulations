@@ -2,10 +2,14 @@ CREATE SEQUENCE employeeId
     START 1
     INCREMENT 1;
 
+CREATE TABLE DONOTUSE (
+    employeeid INTEGER PRIMARY KEY
+);
+
 CREATE TABLE Auth (
     id INTEGER PRIMARY KEY,
     nickname VARCHAR(255) UNIQUE,
-    password VARCHAR(255) DEFAULT '',nickname
+    password VARCHAR(255) DEFAULT '',
     ip VARCHAR(255) DEFAULT '',
     loggedin timestamp
 );
@@ -30,5 +34,5 @@ CREATE TABLE Subscriptions (
 );
 
 CREATE INDEX subscribers ON Subscriptions (subedid, subtoid);
-CREATE INDEX  ON Auth (nickaname);
+CREATE INDEX nickname ON Auth (nickname);
 CREATE INDEX nicknamePass ON Auth (nickname, password);

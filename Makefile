@@ -1,3 +1,5 @@
+net:
+	docker network create congratulations
 launch tools:
 	docker compose -f docker-compose-tools.yml up -d
 delete:

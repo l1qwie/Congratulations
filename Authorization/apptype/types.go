@@ -45,6 +45,16 @@ type Change struct {
 	ChangeData  string `json:"change_data"`
 }
 
+type KafkaEmployee struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
+	Birthday string `json:"birthday"`
+	WhatDo   string `json:"whatdo"`
+	SecondId int    `json:"secondid"`
+}
+
 func ConnectToDatabase() (*sql.DB, error) {
 	db, err := sql.Open("postgres", docConnect())
 	if err != nil {

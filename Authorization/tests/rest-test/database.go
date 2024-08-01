@@ -22,7 +22,7 @@ func (c *TestConnection) checkLoggedIn(a *apptype.Auth) bool {
 	return count > 0
 }
 
-func (c *TestConnection) createEmployee() {
+func (c *TestConnection) CreateEmployee() {
 	_, err := c.DB.Exec("INSERT INTO Auth (id, nickname, password, ip, loggedin) VALUES (nextval('employeeId'), 'mama-miya', '12345678', '::1', CURRENT_TIMESTAMP)")
 	if err != nil {
 		panic(err)
@@ -30,15 +30,26 @@ func (c *TestConnection) createEmployee() {
 	log.Print("Create an employee")
 }
 
-func (c *TestConnection) deleteEmployees() {
-	_, err := c.DB.Exec("DELETE FROM Auth")
+func (c *TestConnection) CreateEmployeeKafka() {
+	_, err := c.DB.Exec("INSERT INTO Employees (id, nickname) VALUES (1, 'mama-miya')")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *TestConnection) DeleteEmployees() {
+	_, err := c.DB.Exec("DELETE FROM Employees")
+	if err != nil {
+		panic(err)
+	}
+	_, err = c.DB.Exec("DELETE FROM Auth")
 	if err != nil {
 		panic(err)
 	}
 	log.Print("All data has been deleted from table Auth")
 }
 
-func (c *TestConnection) resetSequence() {
+func (c *TestConnection) ResetSequence() {
 	_, err := c.DB.Exec("SELECT setval('employeeId', 1, false)")
 	if err != nil {
 		panic(err)
@@ -80,4 +91,37 @@ func (c *TestConnection) checkChangedPasswordEmployee(password string) bool {
 		panic(err)
 	}
 	return count > 0
+}
+
+func (c *TestConnection) CkeckAddedOrUpdatedEmployeeKafka(empl *apptype.KafkaEmployee) (bool, bool) {
+	var count, count1 int
+
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE id = $1 AND nickname = $2", empl.Id, empl.Nickname).Scan(&count)
+	if err != nil {
+		panic(err)
+	}
+	err = c.DB.QueryRow("SELECT COUNT(*) FROM Employees WHERE id = $1 AND name = $2 AND nickname = $3 AND email = $4 AND birthday = $5",
+		empl.Id, empl.Name, empl.Nickname, empl.Email, empl.Birthday).Scan(&count1)
+	if err != nil {
+		panic(err)
+	}
+	return count == 1, count1 == 1
+}
+
+func (c *TestConnection) CheckDeletedEmployeeKafka(empl *apptype.KafkaEmployee) (bool, bool, bool) {
+	var count int
+
+	auth, employess := c.CkeckAddedOrUpdatedEmployeeKafka(empl)
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM Subscriptions WHERE (subtoid = $1) OR (subedid = $1)", empl.Id).Scan(&count)
+	if err != nil {
+		panic(err)
+	}
+	return !auth, !employess, count == 0
+}
+
+func (c *TestConnection) DeleteDONOTUSE() {
+	_, err := c.DB.Exec("DELETE FROM DONOTUSE")
+	if err != nil {
+		panic(err)
+	}
 }
