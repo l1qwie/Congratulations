@@ -102,12 +102,12 @@ func handeWholeRequest(ctx *gin.Context, whatdo string) {
 
 // @Summary This API can subscribe someone to someone.
 // @Description There's only one function - subscribe
-// @Accept path
-// @Produce string
+// @Accept 	application/json
+// @Produce application/json
 // @Param	subscriber		path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
 // @Param 	subto			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
 // @Success 200 {string} string "You've just subscribed to {id}"
-// @Failure 400 {object} rest.Err
+// @Failure 400 {object} rest.Error
 // @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
 // @Router /congratulations/subscriptions/sub/{subscriber}/{subto} [put]
 func sub(router *gin.Engine) {
@@ -120,12 +120,12 @@ func sub(router *gin.Engine) {
 
 // @Summary This API can unsubscribe someone from someone.
 // @Description There's only one functions - unsubscribe
-// @Accept path
-// @Produce string
+// @Accept 	application/json
+// @Produce application/json
 // @Param	subscriber		path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
 // @Param 	subto			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
 // @Success 200 {string} string "You've just unsubscribed from {id}"
-// @Failure 400 {object} rest.Err
+// @Failure 400 {object} rest.Error
 // @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
 // @Router /congratulations/subscriptions/unsub/{subscriber}/{subto} [put]
 func unsub(router *gin.Engine) {

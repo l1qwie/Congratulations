@@ -1,0 +1,87 @@
+definitions:
+  apptype.Employee:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nickname:
+        type: string
+    type: object
+  rest.Err:
+    properties:
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /congratulations/employees/{id}/{limit}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves an array of employees based on the specified employee
+        ID and limit.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        type: string
+      - description: Limit
+        in: path
+        name: limit
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/apptype.Employee'
+            type: array
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            send
+          schema:
+            type: string
+      summary: Get Employees Info
+  /congratulations/employees/{whatdo}/{emplid}:
+    post:
+      consumes:
+      - application/json
+      description: Update or modify employee information based on the action specified
+        in {whatdo}.
+      parameters:
+      - description: 'What app should do: new, update, delete, sub, unsub'
+        in: path
+        name: whatdo
+        type: string
+      - description: The second Employee ID
+        in: path
+        name: emplid
+        type: string
+      - description: Employee details
+        in: body
+        name: employee
+        required: true
+        schema:
+          $ref: '#/definitions/apptype.Employee'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The employee has been updated
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            send
+          schema:
+            type: string
+      summary: Update any kind of information about an employee
+swagger: "2.0"

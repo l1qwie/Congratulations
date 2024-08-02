@@ -1,0 +1,130 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/congratulations/employees/{id}/{limit}": {
+            "get": {
+                "description": "Retrieves an array of employees based on the specified employee ID and limit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get Employees Info",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Employee ID",
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/apptype.Employee"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to send",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/congratulations/employees/{whatdo}/{emplid}": {
+            "post": {
+                "description": "Update or modify employee information based on the action specified in {whatdo}.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update any kind of information about an employee",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "What app should do: new, update, delete, sub, unsub",
+                        "name": "whatdo",
+                        "in": "path"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The second Employee ID",
+                        "name": "emplid",
+                        "in": "path"
+                    },
+                    {
+                        "description": "Employee details",
+                        "name": "employee",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apptype.Employee"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The employee has been updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to send",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "apptype.Employee": {
+            "type": "object",
+            "properties": {
+                "birthday": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.Err": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

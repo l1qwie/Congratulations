@@ -160,7 +160,7 @@ func prepareResponse(body []byte) []byte {
 // If the process is successful, the response will be a string "The employee has been updated".
 // In case of an error, the response will be a JSON object of rest.Err. If there is an encryption error, a plain string will be returned.
 // @Accept json
-// @Produce string
+// @Produce application/json
 // @Param   whatdo      path    string  			false   "What app should do: new, update, delete, sub, unsub"
 // @Param   emplid	    path    string  			false   "The second Employee ID"
 // @Param 	employee 	body 	apptype.Employee 	true 	"Employee details"
@@ -214,8 +214,8 @@ func UpdateEmployees(g *gin.Engine) {
 // If successful, the response will be an array of *apptype.Employee.
 // In case of an error, the response will be a JSON object of rest.Err.
 // If the response is a plain string, it indicates an encryption error. Please contact the developer.
-// @Accept url
-// @Produce json
+// @Accept application/json
+// @Produce application/json
 // @Param   id      path    string  false   "Employee ID"
 // @Param   limit   path    string  false   "Limit"
 // @Success 200 {array}  apptype.Employee

@@ -1,0 +1,127 @@
+definitions:
+  apptype.Auth:
+    properties:
+      nickname:
+        type: string
+      password:
+        type: string
+    type: object
+  apptype.Change:
+    properties:
+      change_data:
+        type: string
+      id:
+        type: integer
+      nickname:
+        type: string
+      password:
+        type: string
+      which_change:
+        type: string
+    type: object
+  apptype.Delete:
+    properties:
+      id:
+        type: integer
+      nickname:
+        type: string
+      password:
+        type: string
+    type: object
+  apptype.SignIn:
+    properties:
+      answer:
+        type: string
+      id:
+        type: integer
+      nickname:
+        type: string
+      password:
+        type: string
+    type: object
+  rest.Error:
+    properties:
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /congratulations/authorization/delete:
+    delete:
+      consumes:
+      - application/json
+      description: If you want to change some data about you in the database, you
+        should call this endpoint.
+      parameters:
+      - description: Details for changing
+        in: body
+        name: change
+        required: true
+        schema:
+          $ref: '#/definitions/apptype.Change'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee has been deleted
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: Change data about you
+  /congratulations/authorization/login:
+    post:
+      consumes:
+      - application/json
+      description: If you want to log in you must send your nickname and password
+      parameters:
+      - description: Details for logging in
+        in: body
+        name: auth
+        required: true
+        schema:
+          $ref: '#/definitions/apptype.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: You have been authrizated
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: Log In
+  /congratulations/authorization/signin:
+    post:
+      consumes:
+      - application/json
+      description: If you want to sign up you must send your nickname and password
+        and it will put this information to the database.
+      parameters:
+      - description: Details for signing up
+        in: body
+        name: notified
+        required: true
+        schema:
+          $ref: '#/definitions/apptype.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/apptype.SignIn'
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: Sign up
+swagger: "2.0"

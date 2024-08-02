@@ -1,0 +1,191 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/congratulations/authorization/delete": {
+            "delete": {
+                "description": "If you want to change some data about you in the database, you should call this endpoint.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Change data about you",
+                "parameters": [
+                    {
+                        "description": "Details for changing",
+                        "name": "change",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apptype.Change"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Employee has been deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to sends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/congratulations/authorization/login": {
+            "post": {
+                "description": "If you want to log in you must send your nickname and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Log In",
+                "parameters": [
+                    {
+                        "description": "Details for logging in",
+                        "name": "auth",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apptype.Auth"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "You have been authrizated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to sends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/congratulations/authorization/signin": {
+            "post": {
+                "description": "If you want to sign up you must send your nickname and password and it will put this information to the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Sign up",
+                "parameters": [
+                    {
+                        "description": "Details for signing up",
+                        "name": "notified",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apptype.Auth"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apptype.SignIn"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to sends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "apptype.Auth": {
+            "type": "object",
+            "properties": {
+                "nickname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "apptype.Change": {
+            "type": "object",
+            "properties": {
+                "change_data": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "which_change": {
+                    "type": "string"
+                }
+            }
+        },
+        "apptype.Delete": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "apptype.SignIn": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

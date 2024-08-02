@@ -1,0 +1,68 @@
+definitions:
+  rest.Error:
+    properties:
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /congratulations/subscriptions/sub/{subscriber}/{subto}:
+    put:
+      consumes:
+      - application/json
+      description: There's only one function - subscribe
+      parameters:
+      - description: Employee's id who's subscribed to somemone (SubtoId)
+        in: path
+        name: subscriber
+        required: true
+        type: integer
+      - description: Employee's id who's subscriber (SubscriberId)
+        in: path
+        name: subto
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: You've just subscribed to {id}
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: This API can subscribe someone to someone.
+  /congratulations/subscriptions/unsub/{subscriber}/{subto}:
+    put:
+      consumes:
+      - application/json
+      description: There's only one functions - unsubscribe
+      parameters:
+      - description: Employee's id who's subscribed to somemone (SubtoId)
+        in: path
+        name: subscriber
+        required: true
+        type: integer
+      - description: Employee's id who's subscriber (SubscriberId)
+        in: path
+        name: subto
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: You've just unsubscribed from {id}
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: This API can unsubscribe someone from someone.
+swagger: "2.0"

@@ -1,0 +1,102 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/congratulations/subscriptions/sub/{subscriber}/{subto}": {
+            "put": {
+                "description": "There's only one function - subscribe",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "This API can subscribe someone to someone.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee's id who's subscribed to somemone (SubtoId)",
+                        "name": "subscriber",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee's id who's subscriber (SubscriberId)",
+                        "name": "subto",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "You've just subscribed to {id}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to sends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/congratulations/subscriptions/unsub/{subscriber}/{subto}": {
+            "put": {
+                "description": "There's only one functions - unsubscribe",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "This API can unsubscribe someone from someone.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee's id who's subscribed to somemone (SubtoId)",
+                        "name": "subscriber",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee's id who's subscriber (SubscriberId)",
+                        "name": "subto",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "You've just unsubscribed from {id}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Something went wrong while we were trying to encrypt data to sends",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "rest.Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

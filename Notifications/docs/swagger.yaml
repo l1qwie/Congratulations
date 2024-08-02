@@ -1,0 +1,55 @@
+definitions:
+  apptype.Notified:
+    properties:
+      birthday:
+        type: string
+      birthday_id:
+        type: integer
+      birthday_name:
+        type: string
+      birthday_nickname:
+        type: string
+      subed_email:
+        type: string
+      subed_id:
+        type: integer
+      subed_name:
+        type: string
+      subed_nickname:
+        type: string
+    type: object
+  rest.Error:
+    properties:
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /congratulations/notify:
+    post:
+      consumes:
+      - application/json
+      description: You must give all fields in structer and then the server can send
+        email by using "gomail"
+      parameters:
+      - description: Details about the subscriber and about 'birthday-boy'
+        in: body
+        name: notified
+        required: true
+        schema:
+          $ref: '#/definitions/apptype.Notified'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The employee was notified
+          schema:
+            type: string
+        "400":
+          description: Something went wrong while we were trying to encrypt data to
+            sends
+          schema:
+            type: string
+      summary: This API can notify any person by sending email
+swagger: "2.0"
