@@ -246,7 +246,7 @@ func testLogIn() {
 		panic(fmt.Sprintf("EXPECTED: You have been authrizated, RESIEVED: %s", answer))
 	}
 	if !Con.checkLoggedIn(auth) {
-		panic("Client didn't log in")
+		panic("Employee didn't log in")
 	}
 	log.Print("Test testLogIn has been finished")
 }
