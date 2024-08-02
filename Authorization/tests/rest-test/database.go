@@ -14,7 +14,7 @@ type TestConnection struct {
 
 func (c *TestConnection) checkLoggedIn(a *apptype.Auth) bool {
 	var count int
-	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE nickname = $1 AND password = $2 AND ip = '::1'",
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE nickname = $1 AND password = $2 AND loggedin = CURRENT_TIMESTAMP",
 		a.Nickname, a.Password).Scan(&count)
 	if err != nil {
 		panic(err)
