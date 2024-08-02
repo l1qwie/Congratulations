@@ -59,7 +59,7 @@ func (c *TestConnection) ResetSequence() {
 
 func (c *TestConnection) ckeckNewEmployee(signin *apptype.SignIn) bool {
 	var count int
-	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE id = $1 AND nickname = $2 AND password = $3 AND ip = '::1'", signin.Id, signin.Nickname, signin.Password).Scan(&count)
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE id = $1 AND nickname = $2 AND password = $3 AND ip = $4", signin.Id, signin.Nickname, signin.Password, apptype.TestIP).Scan(&count)
 	if err != nil {
 		panic(err)
 	}
