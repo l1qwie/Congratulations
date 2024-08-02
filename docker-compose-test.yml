@@ -33,9 +33,18 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql/data
       - ./postgreSQL/create.sql:/docker-entrypoint-initdb.d/create.sql
-      #- ./postgreSQL/set.sql:/docker-entrypoint-initdb.d/set.sql
+     # - ./postgreSQL/set.sql:/docker-entrypoint-initdb.d/set.sql
     ports:
       - 5419:5432
     networks:
       - congratulations
     container_name: congratulations-postgres
+
+  redis:
+    restart: always
+    image: redis:bookworm
+    ports:
+      - "6308:6379"
+    networks:
+      - congratulations
+    container_name: congratulations-redis 

@@ -1,18 +1,13 @@
-package main
+package launch
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"os"
-
 	"Employees/api/kafka/consumer"
 	"Employees/api/rest"
 	"Employees/app"
 	"Employees/apptype"
-
-	"Employees/tests/kafka"
-	resttest "Employees/tests/rest-test"
+	"context"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -29,21 +24,6 @@ func addClient() (*redis.Client, error) {
 	return client, err
 }
 
-// Запускает микросервис Employees
-func startEmployeeServer() {
-	router := gin.Default()
-	rest.GetEmployees(router)
-	rest.UpdateEmployees(router)
-	certFile := "keys/server.crt"
-	keyFile := "keys/server.key"
-
-	log.Print("Starting HTTPS server on :8099")
-	err := router.RunTLS(":8099", certFile, keyFile)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to start HTTPS server: %v", err))
-	}
-}
-
 // Вынимает данные о ключе шифрования из файла (сгенерирован до запуска приложения)
 func pullSymKey(filePath string) {
 	var err error
@@ -53,8 +33,7 @@ func pullSymKey(filePath string) {
 	}
 }
 
-// Запускает сервер и тесты для микросервиса Employees
-func main() {
+func PrepareEnv() {
 	var err error
 	pullSymKey("keys/symmetric-key.bin")
 	app.Client = new(app.RedClient)
@@ -63,10 +42,13 @@ func main() {
 		panic(err)
 	}
 	log.Print("The connection to redis is successful")
+}
 
-	go startEmployeeServer()
+func StartEmployeeServer(router *gin.Engine) {
+	rest.GetEmployees(router)
+	rest.UpdateEmployees(router)
+}
+
+func StartEmployeeConsumer() {
 	go consumer.Consumer()
-
-	resttest.StartEmployeeTests()
-	kafka.TestConsumer()
 }

@@ -104,9 +104,9 @@ func handeWholeRequest(ctx *gin.Context, whatdo string) {
 // @Description There's only one function - subscribe
 // @Accept path
 // @Produce string
-// @Param	SubscriberId	path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
-// @Param 	SubtoId			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
-// @Success 200 {string}  string "You've just subscribed to {id}"
+// @Param	subscriber		path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
+// @Param 	subto			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
+// @Success 200 {string} string "You've just subscribed to {id}"
 // @Failure 400 {object} rest.Err
 // @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
 // @Router /congratulations/subscriptions/sub/{subscriber}/{subto} [put]
@@ -122,9 +122,9 @@ func sub(router *gin.Engine) {
 // @Description There's only one functions - unsubscribe
 // @Accept path
 // @Produce string
-// @Param	SubscriberId	path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
-// @Param 	SubtoId			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
-// @Success 200 {string}  string "You've just unsubscribed from {id}"
+// @Param	subscriber		path	integer		true	"Employee's id who's subscribed to somemone (SubtoId)"
+// @Param 	subto			path	integer 	true	"Employee's id who's subscriber (SubscriberId)"
+// @Success 200 {string} string "You've just unsubscribed from {id}"
 // @Failure 400 {object} rest.Err
 // @Failure 400 {string} string "Something went wrong while we were trying to encrypt data to sends"
 // @Router /congratulations/subscriptions/unsub/{subscriber}/{subto} [put]

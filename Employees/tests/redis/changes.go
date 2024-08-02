@@ -16,7 +16,7 @@ type TestRedClient struct {
 // Добавление редис-клиента test-part
 func AddClient() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
+		Addr:     "congratulations-redis:6379",
 		Password: "",
 		DB:       0,
 	})

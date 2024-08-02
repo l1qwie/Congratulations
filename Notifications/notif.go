@@ -3,23 +3,13 @@ package main
 import (
 	"Notifications/api/rest"
 	"Notifications/app"
-	"Notifications/apptype"
+	"Notifications/launch"
 	"Notifications/tests"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
-
-// Вынимает данные о ключе шифрования из файла (сгенерирован до запуска приложения)
-func pullSymKey(filePath string) {
-	var err error
-	apptype.SymKey, err = os.ReadFile(filePath)
-	if err != nil {
-		panic(err)
-	}
-}
 
 func startNotifierServer() {
 	router := gin.Default()
@@ -34,20 +24,10 @@ func startNotifierServer() {
 	}
 }
 
-func prepareEnv() {
-	var err error
-	pullSymKey("keys/symmetric-key.bin")
-	app.Con = new(app.Connection)
-	app.Con.DB, err = apptype.ConnectToDatabase()
-	if err != nil {
-		panic(err)
-	}
-}
-
 func main() {
 	log.Print("Servese Notifications has been launched")
 
-	prepareEnv()
+	launch.PrepareEnv()
 
 	go startNotifierServer()
 	go app.Guardian()
