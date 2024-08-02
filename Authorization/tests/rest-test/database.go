@@ -14,8 +14,8 @@ type TestConnection struct {
 
 func (c *TestConnection) checkLoggedIn(a *apptype.Auth) bool {
 	var count int
-	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE nickname = $1 AND password = $2",
-		a.Nickname, a.Password).Scan(&count)
+	err := c.DB.QueryRow("SELECT COUNT(*) FROM Auth WHERE nickname = $1 AND password = $2 AND ip = $3",
+		a.Nickname, a.Password, apptype.TestIP).Scan(&count)
 	if err != nil {
 		panic(err)
 	}
@@ -23,7 +23,7 @@ func (c *TestConnection) checkLoggedIn(a *apptype.Auth) bool {
 }
 
 func (c *TestConnection) CreateEmployee() {
-	_, err := c.DB.Exec("INSERT INTO Auth (id, nickname, password, ip, loggedin) VALUES (nextval('employeeId'), 'mama-miya', '12345678', '::1', CURRENT_TIMESTAMP)")
+	_, err := c.DB.Exec("INSERT INTO Auth (id, nickname, password, ip, loggedin) VALUES (nextval('employeeId'), 'mama-miya', '12345678', $1, CURRENT_TIMESTAMP)", apptype.TestIP)
 	if err != nil {
 		panic(err)
 	}

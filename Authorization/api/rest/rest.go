@@ -173,6 +173,7 @@ func AuthLogIn(router *gin.Engine) {
 			answer     string
 			err        error
 		)
+		apptype.TestIP = ctx.ClientIP()
 		auth := new(apptype.Auth)
 		respError := new(Error)
 		statreq, err = handleRequestLogSign(ctx.Request.Body, auth, respError)
@@ -220,6 +221,7 @@ func AuthSignIn(router *gin.Engine) {
 			bodyanswer []byte
 			err        error
 		)
+		apptype.TestIP = ctx.ClientIP()
 		auth := new(apptype.Auth)
 		signin := new(apptype.SignIn)
 		respError := new(Error)
@@ -272,6 +274,7 @@ func AuthDelete(router *gin.Engine) {
 			err        error
 			answer     string
 		)
+		apptype.TestIP = ctx.ClientIP()
 		del := new(apptype.Delete)
 		respError := new(Error)
 		statreq, err = handleRequestDel(ctx.Request.Body, del, respError)
@@ -320,6 +323,7 @@ func AuthChange(router *gin.Engine) {
 			err        error
 			answer     string
 		)
+		apptype.TestIP = ctx.ClientIP()
 		changes := new(apptype.Change)
 		respError := new(Error)
 		statreq, err = handleRequestChange(ctx.Request.Body, changes, respError)

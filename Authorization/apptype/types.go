@@ -8,7 +8,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var SymKey []byte
+var (
+	SymKey []byte
+	TestIP string
+)
 
 const (
 	docHost     = "congratulations-postgres"
